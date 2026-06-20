@@ -123,33 +123,7 @@ function StarRating({ rating, size = 16, onChange }: { rating: number; size?: nu
 }
 
 /* ─── NOTIFICATION TOAST ─── */
-function Notification() {
-  const { notification, clearNotification } = useAppStore();
-  useEffect(() => {
-    if (notification) {
-      const t = setTimeout(clearNotification, 3000);
-      return () => clearTimeout(t);
-    }
-  }, [notification, clearNotification]);
-
-  if (!notification) return null;
-  const colors = {
-    success: 'bg-green-600 text-white',
-    error: 'bg-red-600 text-white',
-    info: 'bg-mareesh text-white',
-  };
-  return (
-    <div className={`fixed top-20 left-1/2 -translate-x-1/2 z-[100] px-6 py-3 rounded-lg shadow-xl animate-fade-in ${colors[notification.type]}`}>
-      <div className="flex items-center gap-2">
-        {notification.type === 'success' && <Check size={18} />}
-        {notification.type === 'error' && <AlertCircle size={18} />}
-        {notification.type === 'info' && <AlertCircle size={18} />}
-        <span className="text-sm font-medium">{notification.message}</span>
-        <button onClick={clearNotification} className="mr-2 opacity-70 hover:opacity-100"><X size={16} /></button>
-      </div>
-    </div>
-  );
-}
+// تم نقله داخل المكون الرئيسي لتجنب خطأ React #310
 
 /* ─── MAIN APP ─── */
 export default function Home() {
@@ -159,7 +133,16 @@ export default function Home() {
     setSelectedCategory, searchQuery, setSearchQuery, user, setUser, cart,
     setCart, cartCount, adminTab, setAdminTab, showAuthModal, setShowAuthModal,
     authMode, setAuthMode, showNotification,
+    notification, clearNotification,
   } = store;
+
+  /* ─── NOTIFICATION (inline to avoid React #310) ─── */
+  useEffect(() => {
+    if (notification) {
+      const t = setTimeout(clearNotification, 3000);
+      return () => clearTimeout(t);
+    }
+  }, [notification, clearNotification]);
 
   /* ─── LOCAL STATE ─── */
   const [products, setProducts] = useState<ProductType[]>([]);
@@ -2296,7 +2279,22 @@ export default function Home() {
   ════════════════════════════════════════════════════════════════ */
   return (
     <div className="min-h-screen flex flex-col bg-cream" dir="rtl">
-      <Notification />
+      {/* Notification inline */}
+      {notification && (
+        <div className={`fixed top-20 left-1/2 -translate-x-1/2 z-[100] px-6 py-3 rounded-lg shadow-xl animate-fade-in ${
+          notification.type === 'success' ? 'bg-green-600 text-white' :
+          notification.type === 'error' ? 'bg-red-600 text-white' :
+          'bg-mareesh text-white'
+        }`}>
+          <div className="flex items-center gap-2">
+            {notification.type === 'success' && <Check size={18} />}
+            {notification.type === 'error' && <AlertCircle size={18} />}
+            {notification.type === 'info' && <AlertCircle size={18} />}
+            <span className="text-sm font-medium">{notification.message}</span>
+            <button onClick={clearNotification} className="mr-2 opacity-70 hover:opacity-100"><X size={16} /></button>
+          </div>
+        </div>
+      )}
       {AuthModal()}
       {ProductModal()}
       {CategoryModal()}
