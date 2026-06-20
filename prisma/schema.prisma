@@ -1,0 +1,213 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  name         String
+  password     String
+  phone        String?
+  role         String    @default("customer") // "admin" or "customer"
+  avatar       String?
+  address      String?
+  city         String?
+  country      String?
+  postalCode   String?
+  isActive     Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  orders       Order[]
+  reviews      Review[]
+  cartItems    CartItem[]
+  wishlistItems WishlistItem[]
+}
+
+model Category {
+  id          String     @id @default(cuid())
+  name        String
+  nameEn      String
+  slug        String     @unique
+  description String?
+  image       String?
+  icon        String?
+  parentId    String?
+  parent      Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children    Category[] @relation("CategoryHierarchy")
+  products    Product[]
+  isActive    Boolean    @default(true)
+  sortOrder   Int        @default(0)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+}
+
+model Product {
+  id           String       @id @default(cuid())
+  name         String
+  nameEn       String
+  slug         String       @unique
+  description  String
+  descriptionEn String?
+  price        Float
+  comparePrice Float?
+  costPrice    Float?
+  sku          String       @unique
+  stock        Int          @default(0)
+  images       String       // JSON array of image URLs
+  categoryId   String
+  category     Category     @relation(fields: [categoryId], references: [id])
+  brand        String?
+  sizes        String?      // JSON array: ["S","M","L","XL"]
+  colors       String?      // JSON array: [{"name":"أحمر","hex":"#FF0000"}]
+  material     String?
+  tags         String?      // JSON array of tags
+  isFeatured   Boolean      @default(false)
+  isNew        Boolean      @default(false)
+  isBestseller Boolean      @default(false)
+  isActive     Boolean      @default(true)
+  avgRating    Float        @default(0)
+  reviewCount  Int          @default(0)
+  totalSold    Int          @default(0)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  orderItems   OrderItem[]
+  reviews      Review[]
+  cartItems    CartItem[]
+  wishlistItems WishlistItem[]
+}
+
+model Order {
+  id            String      @id @default(cuid())
+  orderNumber   String      @unique
+  userId        String
+  user          User        @relation(fields: [userId], references: [id])
+  status        String      @default("pending") // pending, processing, shipped, delivered, cancelled
+  paymentMethod String      @default("cod") // cod, card, paypal
+  paymentStatus String      @default("unpaid") // unpaid, paid, refunded
+  subtotal      Float
+  shippingCost  Float       @default(0)
+  discount      Float       @default(0)
+  total         Float
+  shippingName  String
+  shippingPhone String
+  shippingAddress String
+  shippingCity  String
+  shippingCountry String
+  shippingPostalCode String?
+  notes         String?
+  couponCode    String?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  items         OrderItem[]
+}
+
+model OrderItem {
+  id        String  @id @default(cuid())
+  orderId   String
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+  name      String
+  price     Float
+  quantity  Int
+  size      String?
+  color     String?
+  total     Float
+}
+
+model CartItem {
+  id        String  @id @default(cuid())
+  userId    String
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+  quantity  Int     @default(1)
+  size      String?
+  color     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model WishlistItem {
+  id        String  @id @default(cuid())
+  userId    String
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@unique([userId, productId])
+}
+
+model Review {
+  id        String  @id @default(cuid())
+  userId    String
+  user      User    @relation(fields: [userId], references: [id])
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+  rating    Int     // 1-5
+  title     String?
+  comment   String
+  isActive  Boolean @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Coupon {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  type        String   // "percentage" or "fixed"
+  value       Float
+  minOrder    Float?
+  maxDiscount Float?
+  usageLimit  Int?
+  usedCount   Int      @default(0)
+  isActive    Boolean  @default(true)
+  startsAt    DateTime?
+  expiresAt   DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Setting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Subscriber {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
+
+model ContactMessage {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  subject   String?
+  message   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model Slider {
+  id        String   @id @default(cuid())
+  title     String
+  titleEn   String?
+  subtitle  String?
+  subtitleEn String?
+  image     String
+  link      String?
+  isActive  Boolean  @default(true)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+}
