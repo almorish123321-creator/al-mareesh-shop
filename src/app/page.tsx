@@ -1073,29 +1073,33 @@ export default function Home() {
           {/* Images */}
           <div>
             <div className="aspect-[3/4] bg-cream-dark rounded-xl overflow-hidden mb-4">
-              <img src={images[activeThumb] || images[0] || ''} alt={currentProduct.name} className="w-full h-full object-cover" />
+              <img src={images[activeThumb] || images[0] || '/logo.svg'} alt={currentProduct.name} className="w-full h-full object-cover" />
             </div>
-            {/* Main image + Angle images thumbnails */}
-            {images.filter((img: string) => img).length > 1 && (
+            {/* All image thumbnails */}
+            {images.filter(Boolean).length > 1 && (
               <div className="flex gap-2 overflow-x-auto pb-2 mb-4">
-                {images.slice(0, 3).filter((img: string) => img).map((img: string, idx: number) => (
-                  <button key={idx} onClick={() => setActiveThumb(images.indexOf(img))}
-                    className={`shrink-0 w-20 h-24 rounded-lg overflow-hidden border-2 transition-all ${images.indexOf(img) === activeThumb ? 'border-mareesh' : 'border-transparent opacity-70 hover:opacity-100'}`}>
-                    <img src={img} alt="" className="w-full h-full object-cover" />
-                  </button>
+                {images.map((img: string, idx: number) => (
+                  img ? (
+                    <button key={idx} onClick={() => setActiveThumb(idx)}
+                      className={`shrink-0 w-20 h-24 rounded-lg overflow-hidden border-2 transition-all ${idx === activeThumb ? 'border-mareesh' : 'border-transparent opacity-70 hover:opacity-100'}`}>
+                      <img src={img} alt="" className="w-full h-full object-cover" />
+                    </button>
+                  ) : null
                 ))}
               </div>
             )}
-            {/* Reality images section */}
-            {images.length > 3 && images.slice(3).filter((img: string) => img).length > 0 && (
+            {/* Reality images section (images 4 & 5) */}
+            {images.length > 3 && images.slice(3).some((img: string) => img) && (
               <div className="mt-4">
                 <p className="text-sm font-semibold text-mareesh mb-2">🌟 صور على الواقع</p>
                 <div className="grid grid-cols-2 gap-2">
-                  {images.slice(3).filter((img: string) => img).map((img: string, idx: number) => (
-                    <button key={idx} onClick={() => setActiveThumb(3 + images.slice(3).indexOf(img))}
-                      className={`rounded-lg overflow-hidden border-2 transition-all aspect-[3/4] ${3 + idx === activeThumb ? 'border-emerald-500' : 'border-transparent opacity-80 hover:opacity-100'}`}>
-                      <img src={img} alt={`صورة واقع ${idx + 1}`} className="w-full h-full object-cover" />
-                    </button>
+                  {images.slice(3).map((img: string, idx: number) => (
+                    img ? (
+                      <button key={idx} onClick={() => setActiveThumb(3 + idx)}
+                        className={`rounded-lg overflow-hidden border-2 transition-all aspect-[3/4] ${3 + idx === activeThumb ? 'border-emerald-500' : 'border-transparent opacity-80 hover:opacity-100'}`}>
+                        <img src={img} alt={`صورة واقع ${idx + 1}`} className="w-full h-full object-cover" />
+                      </button>
+                    ) : null
                   ))}
                 </div>
               </div>
