@@ -195,6 +195,9 @@ export default function Home() {
   /* ─── WISHLIST ─── */
   const [wishlist, setWishlist] = useState<string[]>([]);
 
+  /* ─── IMAGE UPLOAD ─── */
+  const [uploadingImage, setUploadingImage] = useState<string | null>(null);
+
   /* ─── DATA FETCHING ─── */
   const seedAndFetch = useCallback(async () => {
     try {
@@ -1997,8 +2000,6 @@ export default function Home() {
   };
 
   /* ─── IMAGE UPLOAD HANDLER ─── */
-  const [uploadingImage, setUploadingImage] = useState<string | null>(null);
-
   const handleImageUpload = async (file: File, slot: string) => {
     if (!file) return;
     setUploadingImage(slot);
