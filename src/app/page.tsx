@@ -1483,7 +1483,7 @@ export default function Home() {
                         <div className="mt-3 p-3 bg-mareesh/5 rounded-lg border border-mareesh/20 space-y-2 text-sm animate-fade-in">
                           <p className="font-bold text-mareesh">تفاصيل الدفع عبر كريمي:</p>
                           <div className="flex items-center gap-2"><span className="text-muted-foreground">اسم المستلم:</span><span className="font-medium">المريش شوب</span></div>
-                          <div className="flex items-center gap-2"><span className="text-muted-foreground">رقم الهاتف:</span><span className="font-medium font-mono" dir="ltr">+967 XXX XXX XXX</span></div>
+                          <div className="flex items-center gap-2"><span className="text-muted-foreground">رقم الهاتف:</span><span className="font-medium font-mono" dir="ltr">+967 777 123 456</span></div>
                           <p className="text-xs text-muted-foreground mt-2">يرجى تحويل المبلغ ثم إرسال إيصال التحويل عبر واتساب</p>
                         </div>
                       )
@@ -1497,7 +1497,7 @@ export default function Home() {
                         <div className="mt-3 p-3 bg-gold/10 rounded-lg border border-gold/20 space-y-2 text-sm animate-fade-in">
                           <p className="font-bold text-gold">تفاصيل الدفع عبر قطيبي:</p>
                           <div className="flex items-center gap-2"><span className="text-muted-foreground">اسم المستلم:</span><span className="font-medium">المريش شوب</span></div>
-                          <div className="flex items-center gap-2"><span className="text-muted-foreground">رقم الهاتف:</span><span className="font-medium font-mono" dir="ltr">+967 XXX XXX XXX</span></div>
+                          <div className="flex items-center gap-2"><span className="text-muted-foreground">رقم الهاتف:</span><span className="font-medium font-mono" dir="ltr">+967 777 123 456</span></div>
                           <p className="text-xs text-muted-foreground mt-2">يرجى تحويل المبلغ ثم إرسال إيصال التحويل عبر واتساب</p>
                         </div>
                       )
@@ -1510,7 +1510,7 @@ export default function Home() {
                       details: (
                         <div className="mt-3 p-3 bg-emerald-50 rounded-lg border border-emerald-200 space-y-2 text-sm animate-fade-in">
                           <p className="font-bold text-emerald-700">تفاصيل الدفع عبر محفظة جيب:</p>
-                          <div className="flex items-center gap-2"><span className="text-muted-foreground">رقم المحفظة:</span><span className="font-medium font-mono" dir="ltr">+967 XXX XXX XXX</span></div>
+                          <div className="flex items-center gap-2"><span className="text-muted-foreground">رقم المحفظة:</span><span className="font-medium font-mono" dir="ltr">+967 777 123 456</span></div>
                           <div className="flex items-center gap-2"><span className="text-muted-foreground">اسم الحساب:</span><span className="font-medium">المريش شوب</span></div>
                           <p className="text-xs text-muted-foreground mt-2">يرجى تحويل المبلغ من محفظة جيب وإرسال إيصال التحويل عبر واتساب</p>
                         </div>
@@ -1625,7 +1625,7 @@ export default function Home() {
           <TabsContent value="register" className="mt-4 space-y-4">
             <div><Label>الاسم</Label><Input value={authForm.name} onChange={(e) => setAuthForm({ ...authForm, name: e.target.value })} placeholder="محمد أحمد" /></div>
             <div><Label>البريد الإلكتروني</Label><Input type="email" value={authForm.email} onChange={(e) => setAuthForm({ ...authForm, email: e.target.value })} placeholder="email@example.com" /></div>
-            <div><Label>رقم الجوال</Label><Input value={authForm.phone} onChange={(e) => setAuthForm({ ...authForm, phone: e.target.value })} placeholder="+966 5XXXXXXXX" /></div>
+            <div><Label>رقم الجوال</Label><Input value={authForm.phone} onChange={(e) => setAuthForm({ ...authForm, phone: e.target.value })} placeholder="+967 7XX XXX XXX" /></div>
             <div><Label>كلمة المرور</Label><Input type="password" value={authForm.password} onChange={(e) => setAuthForm({ ...authForm, password: e.target.value })} placeholder="••••••••" /></div>
             <Button onClick={handleRegister} className="w-full bg-mareesh hover:bg-mareesh-dark h-11">إنشاء حساب</Button>
           </TabsContent>
