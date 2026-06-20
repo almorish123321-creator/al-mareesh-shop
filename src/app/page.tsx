@@ -72,7 +72,7 @@ interface SettingsType {
 
 /* ─── HELPERS ─── */
 const formatPrice = (price: number) => {
-  return price.toLocaleString('ar-SA') + ' ر.س';
+  return price.toLocaleString('ar-YE') + ' ر.ي';
 };
 
 const calcDiscount = (price: number, compare?: number) => {
@@ -188,7 +188,7 @@ export default function Home() {
 
   /* ─── CHECKOUT FORM STATE ─── */
   const [checkoutForm, setCheckoutForm] = useState({
-    name: '', phone: '', address: '', city: '', country: 'السعودية', postalCode: '', paymentMethod: 'cod', notes: ''
+    name: '', phone: '', address: '', city: '', country: 'اليمن', postalCode: '', paymentMethod: 'karimi', notes: ''
   });
 
   /* ─── ADMIN SETTINGS FORM ─── */
@@ -367,7 +367,7 @@ export default function Home() {
         userId: user?.id || 'guest',
         status: 'pending',
         paymentMethod: checkoutForm.paymentMethod,
-        paymentStatus: checkoutForm.paymentMethod === 'cod' ? 'unpaid' : 'paid',
+        paymentStatus: 'unpaid',
         subtotal: cartSubtotal,
         shippingCost,
         discount: couponDiscount,
@@ -550,8 +550,8 @@ export default function Home() {
       {/* Top bar */}
       <div className="bg-mareesh text-white text-xs py-1.5">
         <div className="max-w-7xl mx-auto px-4 flex justify-between items-center">
-          <span>🚚 شحن مجاني للطلبات فوق {settings.free_shipping_threshold || '300'} ر.س</span>
-          <span className="hidden sm:inline">📞 {settings.store_phone || '+966500000000'}</span>
+          <span>🚚 شحن مجاني للطلبات فوق {settings.free_shipping_threshold || '5000'} ر.ي</span>
+          <span className="hidden sm:inline">📞 {settings.store_phone || '+967700000000'}</span>
         </div>
       </div>
       {/* Main header */}
@@ -1075,14 +1075,29 @@ export default function Home() {
             <div className="aspect-[3/4] bg-cream-dark rounded-xl overflow-hidden mb-4">
               <img src={images[activeThumb] || images[0] || ''} alt={currentProduct.name} className="w-full h-full object-cover" />
             </div>
-            {images.length > 1 && (
-              <div className="flex gap-2 overflow-x-auto pb-2">
-                {images.map((img: string, idx: number) => (
-                  <button key={idx} onClick={() => setActiveThumb(idx)}
-                    className={`shrink-0 w-20 h-24 rounded-lg overflow-hidden border-2 transition-all ${idx === activeThumb ? 'border-mareesh' : 'border-transparent opacity-70 hover:opacity-100'}`}>
+            {/* Main image + Angle images thumbnails */}
+            {images.filter((img: string) => img).length > 1 && (
+              <div className="flex gap-2 overflow-x-auto pb-2 mb-4">
+                {images.slice(0, 3).filter((img: string) => img).map((img: string, idx: number) => (
+                  <button key={idx} onClick={() => setActiveThumb(images.indexOf(img))}
+                    className={`shrink-0 w-20 h-24 rounded-lg overflow-hidden border-2 transition-all ${images.indexOf(img) === activeThumb ? 'border-mareesh' : 'border-transparent opacity-70 hover:opacity-100'}`}>
                     <img src={img} alt="" className="w-full h-full object-cover" />
                   </button>
                 ))}
+              </div>
+            )}
+            {/* Reality images section */}
+            {images.length > 3 && images.slice(3).filter((img: string) => img).length > 0 && (
+              <div className="mt-4">
+                <p className="text-sm font-semibold text-mareesh mb-2">🌟 صور على الواقع</p>
+                <div className="grid grid-cols-2 gap-2">
+                  {images.slice(3).filter((img: string) => img).map((img: string, idx: number) => (
+                    <button key={idx} onClick={() => setActiveThumb(3 + images.slice(3).indexOf(img))}
+                      className={`rounded-lg overflow-hidden border-2 transition-all aspect-[3/4] ${3 + idx === activeThumb ? 'border-emerald-500' : 'border-transparent opacity-80 hover:opacity-100'}`}>
+                      <img src={img} alt={`صورة واقع ${idx + 1}`} className="w-full h-full object-cover" />
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
           </div>
@@ -1435,11 +1450,11 @@ export default function Home() {
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div><Label>الاسم الكامل *</Label><Input value={checkoutForm.name} onChange={(e) => setCheckoutForm({ ...checkoutForm, name: e.target.value })} placeholder="محمد أحمد" /></div>
-                    <div><Label>رقم الجوال *</Label><Input value={checkoutForm.phone} onChange={(e) => setCheckoutForm({ ...checkoutForm, phone: e.target.value })} placeholder="+966 5XXXXXXXX" /></div>
+                    <div><Label>رقم الجوال *</Label><Input value={checkoutForm.phone} onChange={(e) => setCheckoutForm({ ...checkoutForm, phone: e.target.value })} placeholder="+967 7XX XXX XXX" /></div>
                   </div>
                   <div><Label>العنوان *</Label><Input value={checkoutForm.address} onChange={(e) => setCheckoutForm({ ...checkoutForm, address: e.target.value })} placeholder="الحي، الشارع، رقم المبنى" /></div>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div><Label>المدينة *</Label><Input value={checkoutForm.city} onChange={(e) => setCheckoutForm({ ...checkoutForm, city: e.target.value })} placeholder="الرياض" /></div>
+                    <div><Label>المدينة *</Label><Input value={checkoutForm.city} onChange={(e) => setCheckoutForm({ ...checkoutForm, city: e.target.value })} placeholder="صنعاء" /></div>
                     <div><Label>الدولة</Label><Input value={checkoutForm.country} onChange={(e) => setCheckoutForm({ ...checkoutForm, country: e.target.value })} /></div>
                     <div><Label>الرمز البريدي</Label><Input value={checkoutForm.postalCode} onChange={(e) => setCheckoutForm({ ...checkoutForm, postalCode: e.target.value })} /></div>
                   </div>
@@ -1455,19 +1470,61 @@ export default function Home() {
                 <CardHeader><CardTitle className="flex items-center gap-2"><CreditCard size={20} /> طريقة الدفع</CardTitle></CardHeader>
                 <CardContent className="space-y-3">
                   {[
-                    { value: 'cod', label: 'الدفع عند الاستلام', icon: <Banknote size={24} />, desc: 'ادفع عند استلام طلبك' },
-                    { value: 'card', label: 'بطاقة ائتمانية', icon: <CreditCard size={24} />, desc: 'Visa, Mastercard, Mada' },
-                    { value: 'paypal', label: 'PayPal', icon: <Wallet size={24} />, desc: 'الدفع عبر حسابك في PayPal' },
+                    { 
+                      value: 'karimi', 
+                      label: 'كريمي (Karimi)', 
+                      icon: <Banknote size={24} />, 
+                      desc: 'تحويل المبلغ عبر شركة كريمي',
+                      details: (
+                        <div className="mt-3 p-3 bg-mareesh/5 rounded-lg border border-mareesh/20 space-y-2 text-sm animate-fade-in">
+                          <p className="font-bold text-mareesh">تفاصيل الدفع عبر كريمي:</p>
+                          <div className="flex items-center gap-2"><span className="text-muted-foreground">اسم المستلم:</span><span className="font-medium">المريش شوب</span></div>
+                          <div className="flex items-center gap-2"><span className="text-muted-foreground">رقم الهاتف:</span><span className="font-medium font-mono" dir="ltr">+967 XXX XXX XXX</span></div>
+                          <p className="text-xs text-muted-foreground mt-2">يرجى تحويل المبلغ ثم إرسال إيصال التحويل عبر واتساب</p>
+                        </div>
+                      )
+                    },
+                    { 
+                      value: 'qutaibi', 
+                      label: 'قطيبي (Qutaibi)', 
+                      icon: <CreditCard size={24} />, 
+                      desc: 'تحويل المبلغ عبر شركة قطيبي',
+                      details: (
+                        <div className="mt-3 p-3 bg-gold/10 rounded-lg border border-gold/20 space-y-2 text-sm animate-fade-in">
+                          <p className="font-bold text-gold">تفاصيل الدفع عبر قطيبي:</p>
+                          <div className="flex items-center gap-2"><span className="text-muted-foreground">اسم المستلم:</span><span className="font-medium">المريش شوب</span></div>
+                          <div className="flex items-center gap-2"><span className="text-muted-foreground">رقم الهاتف:</span><span className="font-medium font-mono" dir="ltr">+967 XXX XXX XXX</span></div>
+                          <p className="text-xs text-muted-foreground mt-2">يرجى تحويل المبلغ ثم إرسال إيصال التحويل عبر واتساب</p>
+                        </div>
+                      )
+                    },
+                    { 
+                      value: 'jeeb', 
+                      label: 'محفظة جيب (Jeeb)', 
+                      icon: <Wallet size={24} />, 
+                      desc: 'الدفع عبر محفظة جيب الإلكترونية',
+                      details: (
+                        <div className="mt-3 p-3 bg-emerald-50 rounded-lg border border-emerald-200 space-y-2 text-sm animate-fade-in">
+                          <p className="font-bold text-emerald-700">تفاصيل الدفع عبر محفظة جيب:</p>
+                          <div className="flex items-center gap-2"><span className="text-muted-foreground">رقم المحفظة:</span><span className="font-medium font-mono" dir="ltr">+967 XXX XXX XXX</span></div>
+                          <div className="flex items-center gap-2"><span className="text-muted-foreground">اسم الحساب:</span><span className="font-medium">المريش شوب</span></div>
+                          <p className="text-xs text-muted-foreground mt-2">يرجى تحويل المبلغ من محفظة جيب وإرسال إيصال التحويل عبر واتساب</p>
+                        </div>
+                      )
+                    },
                   ].map((method) => (
-                    <button key={method.value} onClick={() => setCheckoutForm({ ...checkoutForm, paymentMethod: method.value })}
-                      className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all text-right ${checkoutForm.paymentMethod === method.value ? 'border-mareesh bg-mareesh/5' : 'border-border hover:border-mareesh/30'}`}>
-                      <div className={`p-2 rounded-lg ${checkoutForm.paymentMethod === method.value ? 'bg-mareesh text-white' : 'bg-cream-dark text-muted-foreground'}`}>{method.icon}</div>
-                      <div>
-                        <p className="font-medium">{method.label}</p>
-                        <p className="text-xs text-muted-foreground">{method.desc}</p>
-                      </div>
-                      {checkoutForm.paymentMethod === method.value && <Check size={20} className="text-mareesh mr-auto" />}
-                    </button>
+                    <div key={method.value}>
+                      <button onClick={() => setCheckoutForm({ ...checkoutForm, paymentMethod: method.value })}
+                        className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all text-right ${checkoutForm.paymentMethod === method.value ? 'border-mareesh bg-mareesh/5' : 'border-border hover:border-mareesh/30'}`}>
+                        <div className={`p-2 rounded-lg ${checkoutForm.paymentMethod === method.value ? 'bg-mareesh text-white' : 'bg-cream-dark text-muted-foreground'}`}>{method.icon}</div>
+                        <div>
+                          <p className="font-medium">{method.label}</p>
+                          <p className="text-xs text-muted-foreground">{method.desc}</p>
+                        </div>
+                        {checkoutForm.paymentMethod === method.value && <Check size={20} className="text-mareesh mr-auto" />}
+                      </button>
+                      {checkoutForm.paymentMethod === method.value && method.details}
+                    </div>
                   ))}
                   <div className="flex gap-3 mt-6">
                     <Button variant="outline" onClick={() => setCheckoutStep(1)} className="flex-1">السابق</Button>
@@ -1488,7 +1545,7 @@ export default function Home() {
                     <p>{checkoutForm.address}, {checkoutForm.city}, {checkoutForm.country}</p>
                     <Separator className="my-3" />
                     <h4 className="font-semibold mb-2">طريقة الدفع</h4>
-                    <p>{checkoutForm.paymentMethod === 'cod' ? 'الدفع عند الاستلام' : checkoutForm.paymentMethod === 'card' ? 'بطاقة ائتمانية' : 'PayPal'}</p>
+                    <p>{checkoutForm.paymentMethod === 'karimi' ? 'كريمي (Karimi)' : checkoutForm.paymentMethod === 'qutaibi' ? 'قطيبي (Qutaibi)' : checkoutForm.paymentMethod === 'jeeb' ? 'محفظة جيب (Jeeb)' : checkoutForm.paymentMethod}</p>
                   </div>
                   <div className="space-y-2">
                     <h4 className="font-semibold">المنتجات</h4>
@@ -1595,7 +1652,7 @@ export default function Home() {
           <Card>
             <CardContent className="p-6 flex items-center gap-4">
               <div className="w-12 h-12 bg-mareesh/10 rounded-xl flex items-center justify-center"><Phone className="text-mareesh" size={22} /></div>
-              <div><h4 className="font-semibold">اتصل بنا</h4><p className="text-sm text-muted-foreground">{settings.store_phone || '+966500000000'}</p></div>
+              <div><h4 className="font-semibold">اتصل بنا</h4><p className="text-sm text-muted-foreground">{settings.store_phone || '+967700000000'}</p></div>
             </CardContent>
           </Card>
           <Card>
@@ -1607,7 +1664,7 @@ export default function Home() {
           <Card>
             <CardContent className="p-6 flex items-center gap-4">
               <div className="w-12 h-12 bg-mareesh/10 rounded-xl flex items-center justify-center"><MapPin className="text-mareesh" size={22} /></div>
-              <div><h4 className="font-semibold">موقعنا</h4><p className="text-sm text-muted-foreground">الرياض، المملكة العربية السعودية</p></div>
+              <div><h4 className="font-semibold">موقعنا</h4><p className="text-sm text-muted-foreground">اليمن</p></div>
             </CardContent>
           </Card>
           <Card>
@@ -1895,13 +1952,13 @@ export default function Home() {
                         <TableCell className="font-mono font-bold">WELCOME10</TableCell>
                         <TableCell>نسبة مئوية</TableCell>
                         <TableCell>10%</TableCell>
-                        <TableCell>100 ر.س</TableCell>
+                        <TableCell>100 ر.ي</TableCell>
                       </TableRow>
                       <TableRow>
                         <TableCell className="font-mono font-bold">MAREESH50</TableCell>
                         <TableCell>مبلغ ثابت</TableCell>
-                        <TableCell>50 ر.س</TableCell>
-                        <TableCell>200 ر.س</TableCell>
+                        <TableCell>50 ر.ي</TableCell>
+                        <TableCell>200 ر.ي</TableCell>
                       </TableRow>
                     </TableBody>
                   </Table>
@@ -1934,60 +1991,185 @@ export default function Home() {
     );
   };
 
+  /* ─── IMAGE UPLOAD HANDLER ─── */
+  const [uploadingImage, setUploadingImage] = useState<string | null>(null);
+
+  const handleImageUpload = async (file: File, slot: string) => {
+    if (!file) return;
+    setUploadingImage(slot);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await fetch('/api/upload', { method: 'POST', body: formData });
+      const data = await res.json();
+      if (data.error) { showNotification(data.error, 'error'); return; }
+      const currentImages = JSON.parse(editProduct?.images || '[]');
+      // Ensure we have 5 slots
+      while (currentImages.length < 5) currentImages.push('');
+      const slotIndex: Record<string, number> = { main: 0, angle1: 1, angle2: 2, reality1: 3, reality2: 4 };
+      currentImages[slotIndex[slot]] = data.url;
+      setEditProduct({ ...editProduct!, images: JSON.stringify(currentImages) });
+      showNotification('تم رفع الصورة بنجاح', 'success');
+    } catch { showNotification('خطأ في رفع الصورة', 'error'); }
+    finally { setUploadingImage(null); }
+  };
+
+  const removeImage = (slot: string) => {
+    const currentImages = JSON.parse(editProduct?.images || '[]');
+    while (currentImages.length < 5) currentImages.push('');
+    const slotIndex: Record<string, number> = { main: 0, angle1: 1, angle2: 2, reality1: 3, reality2: 4 };
+    currentImages[slotIndex[slot]] = '';
+    setEditProduct({ ...editProduct!, images: JSON.stringify(currentImages) });
+  };
+
   /* ─── ADMIN PRODUCT MODAL ─── */
-  const ProductModal = () => (
-    <Dialog open={showProductModal} onOpenChange={setShowProductModal}>
-      <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>{editProduct?.id ? 'تعديل منتج' : 'إضافة منتج'}</DialogTitle>
-        </DialogHeader>
-        <div className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div><Label>الاسم بالعربي</Label><Input value={editProduct?.name || ''} onChange={(e) => setEditProduct({ ...editProduct, name: e.target.value })} /></div>
-            <div><Label>الاسم بالإنجليزي</Label><Input value={editProduct?.nameEn || ''} onChange={(e) => setEditProduct({ ...editProduct, nameEn: e.target.value })} /></div>
-          </div>
-          <div><Label>الوصف</Label><Textarea value={editProduct?.description || ''} onChange={(e) => setEditProduct({ ...editProduct, description: e.target.value })} /></div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div><Label>السعر</Label><Input type="number" value={editProduct?.price || 0} onChange={(e) => setEditProduct({ ...editProduct, price: Number(e.target.value) })} /></div>
-            <div><Label>سعر المقارنة</Label><Input type="number" value={editProduct?.comparePrice || 0} onChange={(e) => setEditProduct({ ...editProduct, comparePrice: Number(e.target.value) })} /></div>
-            <div><Label>المخزون</Label><Input type="number" value={editProduct?.stock || 0} onChange={(e) => setEditProduct({ ...editProduct, stock: Number(e.target.value) })} /></div>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div><Label>SKU</Label><Input value={editProduct?.sku || ''} onChange={(e) => setEditProduct({ ...editProduct, sku: e.target.value })} /></div>
-            <div>
-              <Label>الفئة</Label>
-              <Select value={editProduct?.categoryId || ''} onValueChange={(v) => setEditProduct({ ...editProduct, categoryId: v })}>
-                <SelectTrigger className="w-full"><SelectValue placeholder="اختر الفئة" /></SelectTrigger>
-                <SelectContent>
-                  {categories.map((c) => (<SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>))}
-                </SelectContent>
-              </Select>
+  const ProductModal = () => {
+    const currentImages = JSON.parse(editProduct?.images || '[]');
+    while (currentImages.length < 5) currentImages.push('');
+    const imageSlots = [
+      { key: 'main', label: 'الصورة الرئيسية', icon: '📸', required: true },
+      { key: 'angle1', label: 'صورة من اتجاه مختلف ١', icon: '🔄', required: false },
+      { key: 'angle2', label: 'صورة من اتجاه مختلف ٢', icon: '🔄', required: false },
+      { key: 'reality1', label: 'صورة على الواقع ١', icon: '🌟', required: false },
+      { key: 'reality2', label: 'صورة على الواقع ٢', icon: '🌟', required: false },
+    ];
+    const slotIndex: Record<string, number> = { main: 0, angle1: 1, angle2: 2, reality1: 3, reality2: 4 };
+
+    return (
+      <Dialog open={showProductModal} onOpenChange={setShowProductModal}>
+        <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{editProduct?.id ? 'تعديل منتج' : 'إضافة منتج'}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div><Label>الاسم بالعربي</Label><Input value={editProduct?.name || ''} onChange={(e) => setEditProduct({ ...editProduct, name: e.target.value })} /></div>
+              <div><Label>الاسم بالإنجليزي</Label><Input value={editProduct?.nameEn || ''} onChange={(e) => setEditProduct({ ...editProduct, nameEn: e.target.value })} /></div>
+            </div>
+            <div><Label>الوصف</Label><Textarea value={editProduct?.description || ''} onChange={(e) => setEditProduct({ ...editProduct, description: e.target.value })} /></div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div><Label>السعر (ر.ي)</Label><Input type="number" value={editProduct?.price || 0} onChange={(e) => setEditProduct({ ...editProduct, price: Number(e.target.value) })} placeholder="السعر بالريال اليمني" /></div>
+              <div><Label>سعر المقارنة (ر.ي)</Label><Input type="number" value={editProduct?.comparePrice || 0} onChange={(e) => setEditProduct({ ...editProduct, comparePrice: Number(e.target.value) })} /></div>
+              <div><Label>المخزون</Label><Input type="number" value={editProduct?.stock || 0} onChange={(e) => setEditProduct({ ...editProduct, stock: Number(e.target.value) })} /></div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div><Label>SKU</Label><Input value={editProduct?.sku || ''} onChange={(e) => setEditProduct({ ...editProduct, sku: e.target.value })} /></div>
+              <div>
+                <Label>الفئة</Label>
+                <Select value={editProduct?.categoryId || ''} onValueChange={(v) => setEditProduct({ ...editProduct, categoryId: v })}>
+                  <SelectTrigger className="w-full"><SelectValue placeholder="اختر الفئة" /></SelectTrigger>
+                  <SelectContent>
+                    {categories.map((c) => (<SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Image Upload Section */}
+            <div className="space-y-3">
+              <Label className="text-base font-bold text-mareesh">صور المنتج</Label>
+              
+              {/* Main Image */}
+              <div className="border-2 border-dashed border-mareesh/30 rounded-xl p-3">
+                <p className="text-sm font-medium mb-2">{imageSlots[0].icon} {imageSlots[0].label} *</p>
+                <div className="flex items-center gap-3">
+                  {currentImages[0] ? (
+                    <div className="relative w-24 h-28 rounded-lg overflow-hidden border-2 border-mareesh">
+                      <img src={currentImages[0]} alt="الصورة الرئيسية" className="w-full h-full object-cover" />
+                      <button onClick={() => removeImage('main')} className="absolute top-1 left-1 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center text-xs hover:bg-red-600"><X size={12} /></button>
+                    </div>
+                  ) : (
+                    <label className={`w-24 h-28 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-mareesh/50 transition-colors ${uploadingImage === 'main' ? 'opacity-50' : ''}`}>
+                      <Plus size={20} className="text-gray-400" />
+                      <span className="text-xs text-gray-400 mt-1">رفع صورة</span>
+                      <input type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && handleImageUpload(e.target.files[0], 'main')} disabled={uploadingImage === 'main'} />
+                    </label>
+                  )}
+                  {uploadingImage === 'main' && <span className="text-xs text-mareesh animate-pulse">جاري الرفع...</span>}
+                </div>
+              </div>
+
+              {/* Angle Images */}
+              <div className="border border-gold/30 rounded-xl p-3">
+                <p className="text-sm font-medium mb-2">🔄 صور من اتجاهات مختلفة</p>
+                <div className="flex gap-3 flex-wrap">
+                  {[1, 2].map((n) => {
+                    const key = `angle${n}`;
+                    const idx = slotIndex[key];
+                    return (
+                      <div key={key}>
+                        {currentImages[idx] ? (
+                          <div className="relative w-24 h-28 rounded-lg overflow-hidden border border-gold/50">
+                            <img src={currentImages[idx]} alt={`اتجاه ${n}`} className="w-full h-full object-cover" />
+                            <button onClick={() => removeImage(key)} className="absolute top-1 left-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center text-xs hover:bg-red-600"><X size={10} /></button>
+                          </div>
+                        ) : (
+                          <label className={`w-24 h-28 border-2 border-dashed border-gray-200 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-gold/50 transition-colors ${uploadingImage === key ? 'opacity-50' : ''}`}>
+                            <Plus size={18} className="text-gray-300" />
+                            <span className="text-xs text-gray-300 mt-1">اتجاه {n}</span>
+                            <input type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && handleImageUpload(e.target.files[0], key)} disabled={uploadingImage === key} />
+                          </label>
+                        )}
+                        {uploadingImage === key && <span className="text-xs text-gold animate-pulse block text-center mt-1">جاري الرفع...</span>}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Reality Images */}
+              <div className="border border-emerald-300/30 rounded-xl p-3">
+                <p className="text-sm font-medium mb-2">🌟 صور على الواقع</p>
+                <div className="flex gap-3 flex-wrap">
+                  {[1, 2].map((n) => {
+                    const key = `reality${n}`;
+                    const idx = slotIndex[key];
+                    return (
+                      <div key={key}>
+                        {currentImages[idx] ? (
+                          <div className="relative w-24 h-28 rounded-lg overflow-hidden border border-emerald-300/50">
+                            <img src={currentImages[idx]} alt={`واقع ${n}`} className="w-full h-full object-cover" />
+                            <button onClick={() => removeImage(key)} className="absolute top-1 left-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center text-xs hover:bg-red-600"><X size={10} /></button>
+                          </div>
+                        ) : (
+                          <label className={`w-24 h-28 border-2 border-dashed border-gray-200 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-emerald-300/50 transition-colors ${uploadingImage === key ? 'opacity-50' : ''}`}>
+                            <Plus size={18} className="text-gray-300" />
+                            <span className="text-xs text-gray-300 mt-1">واقع {n}</span>
+                            <input type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && handleImageUpload(e.target.files[0], key)} disabled={uploadingImage === key} />
+                          </label>
+                        )}
+                        {uploadingImage === key && <span className="text-xs text-emerald-500 animate-pulse block text-center mt-1">جاري الرفع...</span>}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div><Label>المقاسات (مثل: S,M,L,XL)</Label><Input value={editProduct?.sizes || '[]'} onChange={(e) => setEditProduct({ ...editProduct, sizes: e.target.value })} placeholder='["S","M","L","XL"]' /></div>
+              <div><Label>الألوان (JSON)</Label><Input value={editProduct?.colors || '[]'} onChange={(e) => setEditProduct({ ...editProduct, colors: e.target.value })} placeholder='[{"name":"أحمر","hex":"#FF0000"}]' /></div>
+            </div>
+            <div className="flex items-center gap-4">
+              <label className="flex items-center gap-2 cursor-pointer text-sm">
+                <input type="checkbox" checked={editProduct?.isFeatured || false} onChange={(e) => setEditProduct({ ...editProduct, isFeatured: e.target.checked })} /> مميز
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer text-sm">
+                <input type="checkbox" checked={editProduct?.isNew || false} onChange={(e) => setEditProduct({ ...editProduct, isNew: e.target.checked })} /> جديد
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer text-sm">
+                <input type="checkbox" checked={editProduct?.isBestseller || false} onChange={(e) => setEditProduct({ ...editProduct, isBestseller: e.target.checked })} /> الأكثر مبيعاً
+              </label>
             </div>
           </div>
-          <div><Label>الصور (JSON)</Label><Textarea value={editProduct?.images || '[]'} onChange={(e) => setEditProduct({ ...editProduct, images: e.target.value })} rows={2} /></div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div><Label>المقاسات (JSON)</Label><Input value={editProduct?.sizes || '[]'} onChange={(e) => setEditProduct({ ...editProduct, sizes: e.target.value })} /></div>
-            <div><Label>الألوان (JSON)</Label><Input value={editProduct?.colors || '[]'} onChange={(e) => setEditProduct({ ...editProduct, colors: e.target.value })} /></div>
-          </div>
-          <div className="flex items-center gap-4">
-            <label className="flex items-center gap-2 cursor-pointer text-sm">
-              <input type="checkbox" checked={editProduct?.isFeatured || false} onChange={(e) => setEditProduct({ ...editProduct, isFeatured: e.target.checked })} /> مميز
-            </label>
-            <label className="flex items-center gap-2 cursor-pointer text-sm">
-              <input type="checkbox" checked={editProduct?.isNew || false} onChange={(e) => setEditProduct({ ...editProduct, isNew: e.target.checked })} /> جديد
-            </label>
-            <label className="flex items-center gap-2 cursor-pointer text-sm">
-              <input type="checkbox" checked={editProduct?.isBestseller || false} onChange={(e) => setEditProduct({ ...editProduct, isBestseller: e.target.checked })} /> الأكثر مبيعاً
-            </label>
-          </div>
-        </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => setShowProductModal(false)}>إلغاء</Button>
-          <Button onClick={saveProduct} className="bg-mareesh">حفظ</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowProductModal(false)}>إلغاء</Button>
+            <Button onClick={saveProduct} className="bg-mareesh">حفظ</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    );
+  };
 
   /* ─── ADMIN CATEGORY MODAL ─── */
   const CategoryModal = () => (
@@ -2030,7 +2212,7 @@ export default function Home() {
             <div className="flex gap-3 mt-4">
               {[
                 { icon: <Send size={16} />, label: 'تلجرام', href: 'https://t.me/almareesh_shop', color: 'hover:bg-[#0088cc]' },
-                { icon: <MessageCircle size={16} />, label: 'واتساب', href: 'https://wa.me/966500000000', color: 'hover:bg-[#25D366]' },
+                { icon: <MessageCircle size={16} />, label: 'واتساب', href: 'https://wa.me/967700000000', color: 'hover:bg-[#25D366]' },
                 { icon: <Instagram size={16} />, label: 'انستقرام', href: '#', color: 'hover:bg-[#E1306C]' },
                 { icon: <Facebook size={16} />, label: 'فيسبوك', href: '#', color: 'hover:bg-[#1877F2]' },
               ].map((social, idx) => (
@@ -2068,9 +2250,9 @@ export default function Home() {
           <div>
             <h4 className="font-bold mb-4 text-gold">تواصل معنا</h4>
             <div className="space-y-3">
-              <div className="flex items-center gap-2 text-sm text-[#F5E6D3]/70"><Phone size={14} className="text-gold shrink-0" /> {settings.store_phone || '+966500000000'}</div>
+              <div className="flex items-center gap-2 text-sm text-[#F5E6D3]/70"><Phone size={14} className="text-gold shrink-0" /> {settings.store_phone || '+967700000000'}</div>
               <div className="flex items-center gap-2 text-sm text-[#F5E6D3]/70"><Mail size={14} className="text-gold shrink-0" /> {settings.store_email || 'info@mareesh.com'}</div>
-              <div className="flex items-center gap-2 text-sm text-[#F5E6D3]/70"><MapPin size={14} className="text-gold shrink-0" /> الرياض، السعودية</div>
+              <div className="flex items-center gap-2 text-sm text-[#F5E6D3]/70"><MapPin size={14} className="text-gold shrink-0" /> اليمن</div>
             </div>
           </div>
         </div>
@@ -2114,7 +2296,7 @@ export default function Home() {
       {/* أزرار التواصل العائمة */}
       {view !== 'admin' && (
         <div className="fixed bottom-6 left-6 flex flex-col gap-3 z-50">
-          <a href="https://wa.me/966500000000" target="_blank" rel="noopener noreferrer"
+          <a href="https://wa.me/967700000000" target="_blank" rel="noopener noreferrer"
             className="w-14 h-14 bg-[#25D366] text-white rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform" title="تواصل عبر واتساب">
             <MessageCircle size={28} />
           </a>
