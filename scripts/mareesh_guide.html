@@ -1,0 +1,1028 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>دليل إنشاء متجر المريش شوب</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@300;400;500;600;700;800;900&family=Playfair+Display:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+@page {
+    size: 720px 1020px;
+    margin: 0;
+}
+:root {
+    --c-bg: #0a0f1a;
+    --c-surface: #111827;
+    --c-card: #1a2236;
+    --c-card-alt: #162032;
+    --c-accent: #e8913a;
+    --c-accent2: #d4763c;
+    --c-accent-light: rgba(232,145,58,0.15);
+    --c-text: #f0ede8;
+    --c-text-muted: #8b95a8;
+    --c-border: #2a3550;
+    --c-success: #4ade80;
+    --c-warning: #fbbf24;
+    --c-info: #60a5fa;
+    --c-danger: #f87171;
+}
+html, body {
+    margin: 0;
+    padding: 0;
+    width: 720px;
+    background: var(--c-bg);
+    color: var(--c-text);
+    font-family: 'Noto Sans Arabic', sans-serif;
+    line-height: 1.75;
+    font-size: 14px;
+}
+@media screen {
+    html {
+        height: auto;
+        display: flex;
+        justify-content: center;
+        background: #1a1a2e;
+    }
+    body {
+        transform-origin: top center;
+        margin: 20px auto;
+    }
+}
+
+/* ─── Cover Page ─── */
+.cover {
+    width: 720px;
+    height: 1020px;
+    box-sizing: border-box;
+    break-after: page;
+    overflow: hidden;
+    background: linear-gradient(160deg, #0a0f1a 0%, #132042 40%, #1a2d52 70%, #0f1b33 100%);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    padding: 60px;
+}
+.cover::before {
+    content: '';
+    position: absolute;
+    width: 500px;
+    height: 500px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(232,145,58,0.08) 0%, transparent 70%);
+    top: 10%;
+    right: 0%;
+}
+.cover::after {
+    content: '';
+    position: absolute;
+    width: 300px;
+    height: 300px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(96,165,250,0.06) 0%, transparent 70%);
+    bottom: 15%;
+    left: 0%;
+}
+.cover-tag {
+    font-size: 12px;
+    letter-spacing: 4px;
+    color: var(--c-accent);
+    text-transform: uppercase;
+    margin-bottom: 30px;
+    position: relative;
+    z-index: 2;
+    font-weight: 600;
+}
+.cover-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 64px;
+    font-weight: 900;
+    line-height: 1.1;
+    text-align: center;
+    position: relative;
+    z-index: 2;
+    margin-bottom: 20px;
+    background: linear-gradient(135deg, #f0ede8, #e8913a);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+.cover-subtitle-ar {
+    font-size: 32px;
+    font-weight: 800;
+    color: var(--c-accent);
+    text-align: center;
+    margin-bottom: 40px;
+    position: relative;
+    z-index: 2;
+}
+.cover-desc {
+    font-size: 15px;
+    color: var(--c-text-muted);
+    text-align: center;
+    max-width: 500px;
+    line-height: 1.8;
+    position: relative;
+    z-index: 2;
+    margin-bottom: 50px;
+}
+.cover-line {
+    width: 80px;
+    height: 3px;
+    background: var(--c-accent);
+    border-radius: 2px;
+    margin: 0 auto 30px;
+    position: relative;
+    z-index: 2;
+}
+.cover-meta {
+    font-size: 12px;
+    color: var(--c-text-muted);
+    text-align: center;
+    position: relative;
+    z-index: 2;
+    line-height: 2;
+}
+
+/* ─── Main Content ─── */
+.main-content {
+    padding: 50px 60px 40px 60px;
+}
+
+/* Chapter Headers */
+.chapter-header {
+    break-after: avoid;
+    break-inside: avoid;
+    margin-top: 30px;
+    margin-bottom: 20px;
+}
+.section-tag {
+    font-size: 11px;
+    letter-spacing: 3px;
+    color: var(--c-accent);
+    font-weight: 700;
+    margin-bottom: 6px;
+}
+.section-title {
+    font-size: 26px;
+    font-weight: 800;
+    color: var(--c-text);
+    line-height: 1.3;
+    margin-bottom: 8px;
+}
+.divider {
+    width: 50px;
+    height: 3px;
+    background: var(--c-accent);
+    border-radius: 2px;
+    margin-bottom: 18px;
+}
+
+/* Body Text */
+.body-text {
+    margin-bottom: 14px;
+    line-height: 1.85;
+    color: var(--c-text);
+}
+
+/* Cards */
+.card {
+    background: var(--c-card);
+    border-radius: 10px;
+    padding: 20px 24px;
+    margin-bottom: 14px;
+    break-inside: avoid;
+    border-right: 3px solid var(--c-accent);
+}
+.card-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--c-accent);
+    margin-bottom: 8px;
+}
+.card-text {
+    color: var(--c-text);
+    line-height: 1.75;
+    font-size: 13.5px;
+}
+
+/* Info Cards (icon + text) */
+.info-grid {
+    display: flex;
+    gap: 14px;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+}
+.info-card {
+    flex: 1;
+    min-width: 140px;
+    background: var(--c-card-alt);
+    border-radius: 10px;
+    padding: 18px;
+    text-align: center;
+    break-inside: avoid;
+}
+.info-card-icon {
+    font-size: 28px;
+    margin-bottom: 8px;
+}
+.info-card-value {
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--c-accent);
+}
+.info-card-label {
+    font-size: 11px;
+    color: var(--c-text-muted);
+    margin-top: 4px;
+}
+
+/* Steps */
+.step {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 16px;
+    break-inside: avoid;
+    align-items: flex-start;
+}
+.step-num {
+    min-width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--c-accent);
+    color: var(--c-bg);
+    font-weight: 800;
+    font-size: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.step-content {
+    flex: 1;
+}
+.step-title {
+    font-weight: 700;
+    font-size: 15px;
+    margin-bottom: 4px;
+    color: var(--c-text);
+}
+.step-desc {
+    font-size: 13px;
+    color: var(--c-text-muted);
+    line-height: 1.75;
+}
+
+/* Tables */
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 16px;
+    font-size: 13px;
+    break-inside: avoid;
+}
+.data-table th {
+    background: var(--c-accent);
+    color: var(--c-bg);
+    padding: 10px 14px;
+    font-weight: 700;
+    text-align: right;
+}
+.data-table td {
+    padding: 9px 14px;
+    border-bottom: 1px solid var(--c-border);
+    text-align: right;
+}
+.data-table tr:nth-child(even) td {
+    background: var(--c-card-alt);
+}
+
+/* Highlight Box */
+.highlight-box {
+    background: var(--c-accent-light);
+    border: 1px solid rgba(232,145,58,0.3);
+    border-radius: 10px;
+    padding: 18px 22px;
+    margin-bottom: 14px;
+    break-inside: avoid;
+}
+.highlight-title {
+    font-weight: 700;
+    color: var(--c-accent);
+    margin-bottom: 6px;
+    font-size: 14px;
+}
+.highlight-text {
+    font-size: 13px;
+    color: var(--c-text);
+    line-height: 1.75;
+}
+
+/* Checklist */
+.checklist {
+    margin-bottom: 14px;
+}
+.checklist-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 8px;
+    break-inside: avoid;
+}
+.check-icon {
+    color: var(--c-success);
+    font-size: 16px;
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+.check-text {
+    font-size: 13.5px;
+    line-height: 1.7;
+}
+
+/* Warning Box */
+.warn-box {
+    background: rgba(251,191,36,0.1);
+    border: 1px solid rgba(251,191,36,0.3);
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin-bottom: 14px;
+    break-inside: avoid;
+}
+.warn-title {
+    font-weight: 700;
+    color: var(--c-warning);
+    margin-bottom: 4px;
+    font-size: 14px;
+}
+
+/* Category Cards */
+.cat-grid {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+}
+.cat-card {
+    flex: 1;
+    min-width: 170px;
+    background: linear-gradient(135deg, var(--c-card), var(--c-card-alt));
+    border-radius: 12px;
+    padding: 20px;
+    break-inside: avoid;
+    border-top: 3px solid var(--c-accent);
+}
+.cat-card-icon {
+    font-size: 32px;
+    margin-bottom: 10px;
+}
+.cat-card-title {
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 6px;
+}
+.cat-card-text {
+    font-size: 12px;
+    color: var(--c-text-muted);
+    line-height: 1.7;
+}
+
+/* Timeline */
+.timeline-item {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 18px;
+    break-inside: avoid;
+}
+.timeline-dot {
+    min-width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--c-accent);
+    margin-top: 6px;
+    flex-shrink: 0;
+    position: relative;
+}
+.timeline-dot::after {
+    content: '';
+    position: absolute;
+    width: 2px;
+    height: 50px;
+    background: var(--c-border);
+    top: 16px;
+    right: 6px;
+}
+.timeline-item:last-child .timeline-dot::after {
+    display: none;
+}
+.timeline-content {
+    flex: 1;
+}
+.timeline-title {
+    font-weight: 700;
+    font-size: 14px;
+    margin-bottom: 3px;
+}
+.timeline-desc {
+    font-size: 12.5px;
+    color: var(--c-text-muted);
+    line-height: 1.7;
+}
+
+/* Ending Page */
+.ending {
+    width: 720px;
+    height: 1020px;
+    box-sizing: border-box;
+    break-before: page;
+    overflow: hidden;
+    background: linear-gradient(160deg, #0a0f1a 0%, #132042 50%, #1a2d52 100%);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 60px;
+    position: relative;
+}
+.ending::before {
+    content: '';
+    position: absolute;
+    width: 400px;
+    height: 400px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(232,145,58,0.1) 0%, transparent 70%);
+    bottom: 10%;
+    right: -5%;
+}
+.ending-title {
+    font-size: 36px;
+    font-weight: 900;
+    color: var(--c-accent);
+    text-align: center;
+    margin-bottom: 16px;
+    position: relative;
+    z-index: 2;
+}
+.ending-text {
+    font-size: 16px;
+    color: var(--c-text-muted);
+    text-align: center;
+    line-height: 1.9;
+    max-width: 480px;
+    position: relative;
+    z-index: 2;
+    margin-bottom: 30px;
+}
+.ending-line {
+    width: 60px;
+    height: 3px;
+    background: var(--c-accent);
+    border-radius: 2px;
+    margin: 0 auto 30px;
+    position: relative;
+    z-index: 2;
+}
+.ending-store {
+    font-family: 'Playfair Display', serif;
+    font-size: 48px;
+    font-weight: 900;
+    background: linear-gradient(135deg, #f0ede8, #e8913a);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    position: relative;
+    z-index: 2;
+}
+
+/* Bullet list */
+.bullet-list {
+    margin-bottom: 14px;
+    padding-right: 20px;
+}
+.bullet-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    margin-bottom: 6px;
+    font-size: 13.5px;
+    line-height: 1.75;
+}
+.bullet-dot {
+    color: var(--c-accent);
+    margin-top: 4px;
+    flex-shrink: 0;
+    font-size: 10px;
+}
+
+.sub-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--c-text);
+    margin-bottom: 10px;
+    margin-top: 16px;
+}
+</style>
+</head>
+<body>
+
+<!-- ════════════════════════════════════════════
+     COVER PAGE
+     ════════════════════════════════════════════ -->
+<div class="cover">
+    <div class="cover-tag">دليل إنشاء متجر إلكتروني</div>
+    <div class="cover-title">Al-Mareesh Shop</div>
+    <div class="cover-subtitle-ar">المريش شوب</div>
+    <div class="cover-line"></div>
+    <div class="cover-desc">
+        دليل شامل خطوة بخطوة لإنشاء وإطلاق متجر إلكتروني متكامل
+        متخصص في ملابس الاطفال والملابس النسائية والاحذية
+        باستخدام منصة Bagisto مفتوحة المصدر
+    </div>
+    <div class="cover-meta">
+        اعداد: فريق التحليل التقني<br>
+        التاريخ: يونيو 2026<br>
+        النسخة: 1.0
+    </div>
+</div>
+
+<!-- ════════════════════════════════════════════
+     MAIN CONTENT
+     ════════════════════════════════════════════ -->
+<div class="main-content">
+
+<!-- ─── Chapter 1: Introduction ─── -->
+<div class="chapter-header">
+    <div class="section-tag">الفصل الاول</div>
+    <div class="section-title">مقدمة عن متجر المريش شوب</div>
+    <div class="divider"></div>
+</div>
+
+<div class="body-text">
+    متجر <strong>المريش شوب</strong> هو مشروع تجارة إلكترونية متكامل يهدف الى تقديم تجربة تسوق مميزة للمستهلكين في مجال الازياء والالموضة. يركز المتجر على ثلاث فئات رئيسية هي ملابس الاطفال والملابس النسائية والاحذية، ويستهدف شريحة واسعة من العملاء الذين يبحثون عن الجودة والتنوع والاسعار المناسبة في مكان واحد. يتميز المتجر بتوفير منصة سهلة الاستخدام تدعم اللغة العربية بالكامل وتوفر تجربة تسوق سلسة من التصفح وحتى اتمام الشراء.
+</div>
+
+<div class="cat-grid">
+    <div class="cat-card">
+        <div class="cat-card-icon">&#128084;</div>
+        <div class="cat-card-title">ملابس الاطفال</div>
+        <div class="cat-card-text">فساتين، قمصان، بنطلونات، طقم، ملابس مولود، ملابس رسمية، ملابس رياضية للاطفال من مختلف الاعمار</div>
+    </div>
+    <div class="cat-card">
+        <div class="cat-card-icon">&#128087;</div>
+        <div class="cat-card-title">الملابس النسائية</div>
+        <div class="cat-card-text">عبايات، فساتين، بلوزات، تنورات، جلابيات، ملابس رسمية، ملابس سهرة، ملابس منزلية</div>
+    </div>
+    <div class="cat-card">
+        <div class="cat-card-icon">&#128094;</div>
+        <div class="cat-card-title">الاحذية</div>
+        <div class="cat-card-text">احذية نسائية، احذية اطفال، صنادل، كعب عالي، احذية رياضية، احذية رسمية، احذية منزلية</div>
+    </div>
+</div>
+
+<div class="highlight-box">
+    <div class="highlight-title">لماذا منصة Bagisto؟</div>
+    <div class="highlight-text">
+        تم اختيار منصة Bagisto كأساس للمتجر لعدة اسباب جوهرية: انها مفتوحة المصدر بالكامل (رخصة MIT)، تدعم اللغة العربية رسمياً، تحتوي على اكثر من 40 وحدة متكاملة تغطي كل جوانب التجارة الالكترونية، مبنية على Laravel 12 وهو اقوى اطار عمل PHP، وتوفر نظام قوالب مرن يمكن تخصيصه بسهولة. الاهم من ذلك انها مجانية بالكامل ولا تتطلب اي رسوم اشتراك او عمولات على المبيعات.
+    </div>
+</div>
+
+<!-- ─── Chapter 2: What is the Store ─── -->
+<div class="chapter-header">
+    <div class="section-tag">الفصل الثاني</div>
+    <div class="section-title">ما هو المتجر وما عمله</div>
+    <div class="divider"></div>
+</div>
+
+<div class="body-text">
+    <strong>المتجر الالكتروني</strong> هو موقع على الانترنت يتيح للعملاء تصفح المنتجات وشراؤها الكترونيا والدفع عبر الانترنت واستلامها في مكانهم. المتجر يعمل على مدار الساعة طوال ايام الاسبوع بدون حدود جغرافية او زمنية، مما يعني ان عملاءك يمكنهم التسوق في اي وقت ومن اي مكان.
+</div>
+
+<div class="sub-title">ماذا سيقدم المريش شوب للعملاء؟</div>
+
+<div class="card">
+    <div class="card-title">تجربة تسوق متكاملة</div>
+    <div class="card-text">
+        يتيح المتجر للعميل تصفح الالاف المنتجات حسب الفئة والعلامة التجارية والسعر والحجم واللون، مع امكانية البحث الذكي باستخدام تقنية Elasticsearch التي توفر نتائج فورية ودقيقة. يمكن للعميل حفظ المنتجات في قائمة الامنيات ومقارنة المنتجات وقراءة تقييمات العملاء الآخرين قبل اتخاذ قرار الشراء.
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-title">دفع آمن ومتعدد الخيارات</div>
+    <div class="card-text">
+        يدعم المتجر عدة طرق للدفع تشمل الدفع عند الاستلام (الاكثر شيوعاً في المنطقة العربية) والتحويل البنكي واعتماد بطاقات الائتمان عبر بوابات دفع عالمية مثل Stripe وPayPal. جميع المعاملات مشفرة ومحمية وفق اعلى معايير الامان الالكتروني مع دعم المصادقة الثنائية لحسابات المديرين.
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-title">ادارة طلبات ذكية</div>
+    <div class="card-text">
+        يوفر المتجر نظام متابعة طلبات متطور حيث يمكن للعميل تتبع حالة طلبه من لحظة الشراء وحتى التوصيل. كما يتضمن نظام استرجاع واستبدال مرن يتيح للعملاء طلب الارجاع بسهولة مع متابعة حالة الطلب. من جانب الادارة يتم تتبع كل الطلبات والفواتير والشحنات من لوحة تحكم مركزية.
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-title">تسويق وعروض ذكية</div>
+    <div class="card-text">
+        يتيح المتجر انشاء كوبونات خصم وعروض خاصة وقواعد تسعير تلقائية حسب فئة العميل او المنطقة الجغرافية. يمكن ايضاً اعداد حملات تسويقية عبر البريد الالكتروني وتحليل اداء المبيعات من خلال تقارير مفصلة تشمل احصاءات المبيعات والعملاء والمنتجات الاكثر مبيعاً.
+    </div>
+</div>
+
+<!-- ─── Chapter 3: Requirements ─── -->
+<div class="chapter-header">
+    <div class="section-tag">الفصل الثالث</div>
+    <div class="section-title">المتطلبات التقنية</div>
+    <div class="divider"></div>
+</div>
+
+<div class="body-text">
+    قبل البدء في انشاء المتجر يجب تجهيز البنية التحتية التقنية اللازمة. تنقسم المتطلبات الى قسمين: متطلبات الاستضافة والخوادم ومتطلبات البرمجيات والخدمات.
+</div>
+
+<div class="sub-title">متطلبات الاستضافة والخوادم</div>
+
+<table class="data-table">
+    <thead>
+        <tr>
+            <th>المتطلب</th>
+            <th>الحد الادنى</th>
+            <th>الموصى به</th>
+            <th>الغرض</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr><td>استضافة VPS</td><td>2 CPU / 4GB RAM</td><td>4 CPU / 8GB RAM</td><td>تشغيل التطبيق والخدمات</td></tr>
+        <tr><td>مساحة التخزين</td><td>40 GB SSD</td><td>80 GB SSD</td><td>الملفات وقاعدة البيانات والصور</td></tr>
+        <tr><td>عرض النطاق</td><td>2 TB/شهر</td><td>5 TB/شهر</td><td>حركة الزوار والصور</td></tr>
+        <tr><td>شهادة SSL</td><td>مجانية (Lets Encrypt)</td><td>مدفوعة</td><td>تشفير البيانات وHTTPS</td></tr>
+        <tr><td>نظام التشغيل</td><td>Ubuntu 22.04</td><td>Ubuntu 24.04</td><td>بيئة تشغيل مستقرة</td></tr>
+    </tbody>
+</table>
+
+<div class="sub-title">متطلبات البرمجيات</div>
+
+<table class="data-table">
+    <thead>
+        <tr>
+            <th>البرنامج</th>
+            <th>الاصدارة</th>
+            <th>الوظيفة</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr><td>PHP</td><td>8.3+</td><td>لغة البرمجة الاساسية</td></tr>
+        <tr><td>MySQL</td><td>8.0+</td><td>قاعدة البيانات الرئيسية</td></tr>
+        <tr><td>Redis</td><td>7.0+</td><td>التخزين المؤقت والجلسات</td></tr>
+        <tr><td>Elasticsearch</td><td>7.17+</td><td>محرك البحث المتقدم</td></tr>
+        <tr><td>Node.js</td><td>18+</td><td>بناء الاصول الامامية</td></tr>
+        <tr><td>Composer</td><td>2+</td><td>ادارة حزم PHP</td></tr>
+        <tr><td>Nginx</td><td>1.24+</td><td>خادم الويب</td></tr>
+        <tr><td>Supervisor</td><td>اخر اصدار</td><td>ادارة عمليات الطابور</td></tr>
+    </tbody>
+</table>
+
+<div class="warn-box">
+    <div class="warn-title">تنبيه مهم حول التكاليف</div>
+    <div class="card-text" style="font-size:13px;">
+        منصة Bagisto نفسها مجانية بالكامل، لكن تكلفة تشغيل المتجر تشمل: الاستضافة (تبدا من 20-50 دولار/شهر)، اسم النطاق (حوالي 10-15 دولار/سنة)، شهادة SSL (مجانية مع Lets Encrypt)، ورسوم بوابات الدفع (نسبة من كل معاملة عادة 2-3%). لا توجد رسوم اشتراك شهرية او عمولات على المنصة نفسها.
+    </div>
+</div>
+
+<!-- ─── Chapter 4: Step by Step Plan ─── -->
+<div class="chapter-header">
+    <div class="section-tag">الفصل الرابع</div>
+    <div class="section-title">خطة العمل خطوة بخطوة</div>
+    <div class="divider"></div>
+</div>
+
+<div class="body-text">
+    فيما يلي الخطة التفصيلية لانشاء متجر المريش شوب من الصفر وحتى الاطلاق. كل خطوة تتضمن شرحاً واضحاً لما يجب عمله ولماذا هو مهم.
+</div>
+
+<div class="step">
+    <div class="step-num">1</div>
+    <div class="step-content">
+        <div class="step-title">تجهيز بيئة الاستضافة</div>
+        <div class="step-desc">استأجر خادم VPS من مزود خدمة موثوق مثل DigitalOcean او Hetzner او AWS. اختر خطة بمواصفات لا تقل عن 2 معالج و4 جيجابايت RAM. قم بتثبيت نظام Ubuntu 22.04 او 24.04 واعداد جدار الحماية وشهادة SSL. هذه هي الاساس الذي سيعمل عليه المتجر بالكامل.</div>
+    </div>
+</div>
+
+<div class="step">
+    <div class="step-num">2</div>
+    <div class="step-content">
+        <div class="step-title">تثبيت البرمجيات المطلوبة</div>
+        <div class="step-desc">قم بتثبيت PHP 8.3 مع جميع الملحقات المطلوبة (curl, mbstring, intl, openssl, pdo_mysql, tokenizer, calendar) و MySQL 8.0 و Redis و Elasticsearch 7.17 و Node.js 18+ و Composer 2 و Nginx كخادم ويب. يمكنك استخدام Docker لتسهيل هذه الخطوة حيث يوفر Bagisto ملف docker-compose جاهز يحتوي على كل الخدمات.</div>
+    </div>
+</div>
+
+<div class="step">
+    <div class="step-num">3</div>
+    <div class="step-content">
+        <div class="step-title">تثبيت Bagisto</div>
+        <div class="step-desc">انسخ مشروع Bagisto من GitHub ثم ثبت حزم PHP عبر الامر <code>composer install</code> واعد ملف البيئة <code>.env</code> بمعلومات قاعدة البيانات وRedis وElasticsearch. شغل التهجيرات <code>php artisan migrate</code> ثم املأ البيانات الاولية <code>php artisan db:seed</code> ثم ابنِ الاصول <code>npm run build</code>. اخيراً شغل المتجر محلياً للتاكد من انه يعمل.</div>
+    </div>
+</div>
+
+<div class="step">
+    <div class="step-num">4</div>
+    <div class="step-content">
+        <div class="step-title">تهيئة المتجر باللغة العربية</div>
+        <div class="step-desc">من لوحة التحكم انتقل الى الاعدادات واختر اللغة العربية كلغة افتراضية للمتجر. يدعم Bagisto اللغة العربية رسمياً بفضل حزمة ar-php المدمجة. تاكد من تفعيل اتجاه النص من اليمين الى اليسار (RTL) في القالب. جميع النصوص والازرار والتنبيهات ستظهر بالعربية تلقائياً.</div>
+    </div>
+</div>
+
+<div class="step">
+    <div class="step-num">5</div>
+    <div class="step-content">
+        <div class="step-title">انشاء الفئات والتصنيفات</div>
+        <div class="step-desc">انشئ هيكل التصنيفات الرئيسية والفرعية للمتجر. التصنيفات الاساسية ستكون: ملابس اطفال (يشمل: حديثي الولادة، 1-3 سنوات، 4-6 سنوات، 7-12 سنة)، ملابس نسائية (يشمل: عبايات، فساتين، بلوزات، تنورات، جلابيات، ملابس رسمية، ملابس منزلية)، واحذية (يشمل: احذية نسائية، احذية اطفال، صنادل، كعب عالي، رياضية). كل تصنيف فرعي يمكن ان يحتوي على تصنيفات ادق حسب الحاجة.</div>
+    </div>
+</div>
+
+<div class="step">
+    <div class="step-num">6</div>
+    <div class="step-content">
+        <div class="step-title">اضافة المنتجات</div>
+        <div class="step-desc">ابدا باضافة المنتجات الى كل تصنيف. لكل منتج ادخل: الاسم الوصفي والوصف التفصيلي والسعر وصور عالية الجودة (4-6 صور لكل منتج) والمقاسات المتاحة والالوان وخيار ادارة المخزون. يمكنك استخدام خاصية الاستيراد بالجملة عبر ملفات Excel لاضافة مئات المنتجات دفعة واحدة باستخدام وحدة DataTransfer المدمجة.</div>
+    </div>
+</div>
+
+<div class="step">
+    <div class="step-num">7</div>
+    <div class="step-content">
+        <div class="step-title">اعداد بوابات الدفع</div>
+        <div class="step-desc">فعّل طرق الدفع المناسبة لسوقك. يوصى بالبدء بـ: الدفع عند الاستلام (الخيار الاكثر طلباً في العالم العربي)، التحويل البنكي المباشر، وربط بوابة Stripe او PayPal للبطاقات الائتمانية. اختبر كل طريقة دفع في وضع التجربة (sandbox) قبل التفعيل الحقيقي. تاكد من اعداد العملة المناسبة (ريال يمني او دولار امريكي حسب السوق المستهدف).</div>
+    </div>
+</div>
+
+<div class="step">
+    <div class="step-num">8</div>
+    <div class="step-content">
+        <div class="step-title">اعداد الشحن والتوصيل</div>
+        <div class="step-desc">حدد مناطق الشحن واسعاره. يمكنك اعداد: شحن مجاني للطلبات فوق مبلغ معين، شحن بسعر ثابت حسب المنطقة، او شحن مجاني لجميع الطلبات كعرض ترويجي. ربط المتجر مع شركات الشحن المحلية مثل ارامكس وفيدكس وسمسا والبريد السريع. تاكد من اعداد اوقات التوصيل المتوقعة لكل منطقة.</div>
+    </div>
+</div>
+
+<div class="step">
+    <div class="step-num">9</div>
+    <div class="step-content">
+        <div class="step-title">تخصيص تصميم المتجر</div>
+        <div class="step-desc">قم بتعديل القالب الافتراضي ليعكس هوية المريش شوب. غير الالوان والشعار والخطوط والصور. اضف صفحة "من نحن" و"سياسة الارجاع" و"الاسئلة الشائعة" و"تواصل معنا". صمم الصفحة الرئيسية لتعرض المنتجات المميزة والعروض والتصنيفات الرئيسية بشكل جذاب. يمكنك التعديل على قوالب Blade مباشرة او استخدام وحدة Theme المدمجة.</div>
+    </div>
+</div>
+
+<div class="step">
+    <div class="step-num">10</div>
+    <div class="step-content">
+        <div class="step-title">الاختبار والاطلاق</div>
+        <div class="step-desc">اختبر المتجر بالكامل قبل الاطلاق: سجل حساب عميل واضف منتجات للسلة واتم عملية الشراء بكل طرق الدفع، جرب البحث والتصفية، اختبر الاستجابة على الجوال والتابلت، تحقق من سرعة التحميل، راجع جميع الصفحات باللغة العربية. بعد التاكد من كل شيء قم بتوجيه النطاق واطلق المتجر رسمياً وابدا الحملة التسويقية.</div>
+    </div>
+</div>
+
+<!-- ─── Chapter 5: Store Structure ─── -->
+<div class="chapter-header">
+    <div class="section-tag">الفصل الخامس</div>
+    <div class="section-title">هيكل المتجر وتصنيفاته</div>
+    <div class="divider"></div>
+</div>
+
+<div class="body-text">
+    الهيكل التنظيمي للمتجر هو العمود الفقري لتجربة التسوق. كلما كان التصنيف اوضح ومنطقياً كلما كان العميل اسرع في ايجاد ما يريد واتمام الشراء. فيما يلي الهيكل المقترح للمريش شوب مع التفاصيل لكل قسم.
+</div>
+
+<div class="card" style="border-right-color: #f472b6;">
+    <div class="card-title" style="color: #f472b6;">القسم الاول: ملابس الاطفال</div>
+    <div class="card-text">
+        <strong>التصنيفات الفرعية:</strong><br>
+        - حديثي الولادة (0-12 شهر): بادي، فروم، طقم مولود، قبعة، جوارب<br>
+        - اطفال صغار (1-3 سنوات): فساتين، قمصان، بنطلونات، طقم، بيجاما<br>
+        - اطفال (4-6 سنوات): فساتين، قمصان، بنطلونات، جاكيت، طقم مدرسي<br>
+        - اطفال (7-12 سنة): قمصان، بنطلونات، فساتين، جاكيت، ملابس رياضية<br>
+        <strong>السمات المطلوبة:</strong> المقاس (حسب العمر)، اللون، نوع القماش، الموسم (صيفي/شتوي)، المناسبة (عادي/رسمي/رياضي)
+    </div>
+</div>
+
+<div class="card" style="border-right-color: #c084fc;">
+    <div class="card-title" style="color: #c084fc;">القسم الثاني: الملابس النسائية</div>
+    <div class="card-text">
+        <strong>التصنيفات الفرعية:</strong><br>
+        - عبايات: عبايات يومية، عبايات رسمية، عبايات مطرزة، عبايات ملونة<br>
+        - فساتين: فساتين سهرة، فساتين كاجوال، فساتين عمل، فساتين مناسبات<br>
+        - بلوزات وتنورات: بلوزات رسمية، بلوزات كاجوال، تنورات قصيرة، تنورات طويلة<br>
+        - جلابيات: جلابيات منزلية، جلابيات خارجية، جلابيات مطرزة<br>
+        - ملابس خارجية: جاكيت، معاطف، شالات، عباءات<br>
+        <strong>السمات المطلوبة:</strong> المقاس (XS-4XL)، اللون، نوع القماش، الموسم، المناسبة
+    </div>
+</div>
+
+<div class="card" style="border-right-color: #60a5fa;">
+    <div class="card-title" style="color: #60a5fa;">القسم الثالث: الاحذية</div>
+    <div class="card-text">
+        <strong>التصنيفات الفرعية:</strong><br>
+        - احذية نسائية: كعب عالي، كعب متوسط، فلات، مكعبات، احذية رسمية<br>
+        - احذية اطفال: احذية مدرسية، صنادل، احذية رياضية، بووتس<br>
+        - احذية رياضية: نسائية، اطفال<br>
+        - صنادل ومشاي: صنادل نسائية، مشاي منزلية، صنادل اطفال<br>
+        <strong>السمات المطلوبة:</strong> المقاس (ارقام الاحذية)، اللون، المادة (جلد/قماش/صناعي)، النعل، المناسبة
+    </div>
+</div>
+
+<!-- ─── Chapter 6: Payment ─── -->
+<div class="chapter-header">
+    <div class="section-tag">الفصل السادس</div>
+    <div class="section-title">بوابات الدفع والمالية</div>
+    <div class="divider"></div>
+</div>
+
+<div class="body-text">
+    اختيار بوابة الدفع المناسبة من القرارات الاكثر اهمية في المتجر الالكتروني. يجب ان تكون طرق الدفع مالائمة لسوقك المستهدف وموثوقة وآمنة. فيما يلي الخيارات المتاحة والموصى بها للمريش شوب.
+</div>
+
+<table class="data-table">
+    <thead>
+        <tr>
+            <th>طريقة الدفع</th>
+            <th>النوع</th>
+            <th>العمولة</th>
+            <th>الملاءمة</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr><td>الدفع عند الاستلام</td><td>مدمج</td><td>مجاني</td><td>ممتازة - الاكثر استخداماً</td></tr>
+        <tr><td>التحويل البنكي</td><td>مدمج</td><td>مجاني</td><td>جيدة - للعملاء التقليديين</td></tr>
+        <tr><td>Stripe</td><td>اضافة</td><td>2.9% + 0.30$</td><td>ممتازة - بطاقات الائتمان</td></tr>
+        <tr><td>PayPal</td><td>اضافة</td><td>2.9% + 0.30$</td><td>جيدة - للعملاء الدوليين</td></tr>
+        <tr><td>Razorpay</td><td>اضافة</td><td>2%</td><td>مناسبة للسوق الهندي</td></tr>
+        <tr><td>PayU</td><td>اضافة</td><td>2%</td><td>مناسبة للسوق الهندي</td></tr>
+    </tbody>
+</table>
+
+<div class="highlight-box">
+    <div class="highlight-title">توصية لسوق المنطقة العربية</div>
+    <div class="highlight-text">
+        نوصي بالبدء بطريقتين اساسيتين: <strong>الدفع عند الاستلام</strong> (لانه الاكثر شيوعاً في المنطقة العربية حيث يفضله اكثر من 70% من المتسوقين) و<strong>Stripe</strong> (للبطاقات الائتمانية والمحافظ الرقمية). يمكنك اضافة PayPal لاحقاً اذا استهدفت عملاء دوليين. لا تنسَ اعداد العملة المحلية في المتجر (ريال يمني او دولار امريكي) وضبط اسعار الصرف اذا كنت تقبل عملات متعددة.
+    </div>
+</div>
+
+<!-- ─── Chapter 7: Marketing ─── -->
+<div class="chapter-header">
+    <div class="section-tag">الفصل السابع</div>
+    <div class="section-title">التسويق واطلاق المتجر</div>
+    <div class="divider"></div>
+</div>
+
+<div class="body-text">
+    الاطلاق الناجح لا يقتصر على تجهيز المتجر تقنياً بل يتضمن خطة تسويقية مدروسة تضمن وصول المتجر الى الجمهور المستهدف وتحويل الزوار الى عملاء فعليين. فيما يلي خطة التسويق والاطلاق المقترحة.
+</div>
+
+<div class="sub-title">مرحلة ما قبل الاطلاق (2-4 اسابيع)</div>
+
+<div class="timeline-item">
+    <div class="timeline-dot"></div>
+    <div class="timeline-content">
+        <div class="timeline-title">انشاء حسابات التواصل الاجتماعي</div>
+        <div class="timeline-desc">انشئ حسابات على انستغرام وتيك توك وفيسبوك وتويتر باسم المريش شوب. صمم هوية بصرية موحدة تشمل الشعار والالوان والخطوط. انشر محتوى تشويقي عن المتجر القادم مع صور للمنتجات.</div>
+    </div>
+</div>
+
+<div class="timeline-item">
+    <div class="timeline-dot"></div>
+    <div class="timeline-content">
+        <div class="timeline-title">بناء القائمة البريدية</div>
+        <div class="timeline-desc">اضف نموذج اشتراك في الصفحة التجريبية للمتجر مع عرض تشويقي مثل "سجل الان واحصل على خصم 15% عند الاطلاق". اجمع اكبر عدد من عناوين البريد الالكتروني لارسال رسالة الاطلاق.</div>
+    </div>
+</div>
+
+<div class="timeline-item">
+    <div class="timeline-dot"></div>
+    <div class="timeline-content">
+        <div class="timeline-title">اعداد المحتوى التسويقي</div>
+        <div class="timeline-desc">جهز مجموعة من الصور والفيديوهات عالية الجودة للمنتجات. صمم اعلانات مرئية لوسائل التواصل الاجتماعي. اكتب نسخ اعلانية جذابة باللغة العربية تعبر عن هوية المتجر وقيمه.</div>
+    </div>
+</div>
+
+<div class="sub-title">مرحلة الاطلاق</div>
+
+<div class="card">
+    <div class="card-title">عرض الاطلاق الخاص</div>
+    <div class="card-text">
+        قدم عرضاً قوياً عند الاطلاق لجذب اول مجموعة من العملاء مثل: خصم 25% على جميع المنتجات في الاسبوع الاول، شحن مجاني على الطلبات فوق مبلغ معين، كوبون خصم حصري لمتابعي حسابات التواصل، او هدية مجانية مع كل طلب. هذه العروض تبني قاعدة عملاء اولية وتولد تقييمات واراء ايجابية.
+    </div>
+</div>
+
+<div class="sub-title">مرحلة ما بعد الاطلاق (مستمرة)</div>
+
+<div class="bullet-list">
+    <div class="bullet-item"><div class="bullet-dot">&#9679;</div><div>نشر محتوى يومي على وسائل التواصل الاجتماعي (صور منتجات، تنسيقات، نصائح الموضة)</div></div>
+    <div class="bullet-item"><div class="bullet-dot">&#9679;</div><div>ارسال رسائل بريد الكتروني اسبوعية بالعروض والمنتجات الجديدة</div></div>
+    <div class="bullet-item"><div class="bullet-dot">&#9679;</div><div>التعاون مع مؤثرين محليين في مجال الموضة والازياء</div></div>
+    <div class="bullet-item"><div class="bullet-dot">&#9679;</div><div>اطلاق عروض موسمية (رمضان، العيد، العودة للمدرسة، نهاية السنة)</div></div>
+    <div class="bullet-item"><div class="bullet-dot">&#9679;</div><div>تحسين محركات البحث SEO لمحتوى المتجر والمدونة</div></div>
+    <div class="bullet-item"><div class="bullet-dot">&#9679;</div><div>استخدام اعلانات مدفوعة على انستغرام وفيسبوك وتيك توك</div></div>
+</div>
+
+<!-- ─── Chapter 8: Launch Checklist ─── -->
+<div class="chapter-header">
+    <div class="section-tag">الفصل الثامن</div>
+    <div class="section-title">قائمة فحص الاطلاق</div>
+    <div class="divider"></div>
+</div>
+
+<div class="body-text">
+    قبل اطلاق المتجر رسمياً تأكد من اكمال جميع العناصر التالية. هذه القائمة تمثل الحد الادنى المطلوب لاطلاق متجر يعمل بشكل صحيح ويقدم تجربة احترافية للعملاء.
+</div>
+
+<div class="sub-title">الاعدادات التقنية</div>
+<div class="checklist">
+    <div class="checklist-item"><div class="check-icon">&#10003;</div><div class="check-text">تثبيت Bagisto بنجاح وربطه بالنطاق</div></div>
+    <div class="checklist-item"><div class="check-icon">&#10003;</div><div class="check-text">تفعيل شهادة SSL (HTTPS)</div></div>
+    <div class="checklist-item"><div class="check-icon">&#10003;</div><div class="check-text">اعداد Redis للتخزين المؤقت</div></div>
+    <div class="checklist-item"><div class="check-icon">&#10003;</div><div class="check-text">تفعيل Elasticsearch للبحث</div></div>
+    <div class="checklist-item"><div class="check-icon">&#10003;</div><div class="check-text">اعداد عميل الطابور (Supervisor)</div></div>
+    <div class="checklist-item"><div class="check-icon">&#10003;</div><div class="check-text">اعداد النسخ الاحتياطي التلقائي</div></div>
+    <div class="checklist-item"><div class="check-icon">&#10003;</div><div class="check-text">اختبار سرعة المتجر (اقل من 3 ثوان)</div></div>
+</div>
+
+<div class="sub-title">محتوى المتجر</div>
+<div class="checklist">
+    <div class="checklist-item"><div class="check-icon">&#10003;</div><div class="check-text">اللغة العربية كافتراضية مع دعم RTL</div></div>
+    <div class="checklist-item"><div class="check-icon">&#10003;</div><div class="check-text">الشعار والهوية البصرية مطبقة</div></div>
+    <div class="checklist-item"><div class="check-icon">&#10003;</div><div class="check-text">التصنيفات والاقسام منشأة (اطفال، نسائية، احذية)</div></div>
+    <div class="checklist-item"><div class="check-icon">&#10003;</div><div class="check-text">منتجات كافية مضافة (50+ منتج كحد ادنى)</div></div>
+    <div class="checklist-item"><div class="check-icon">&#10003;</div><div class="check-text">صور عالية الجودة لكل منتج (4+ صور)</div></div>
+    <div class="checklist-item"><div class="check-icon">&#10003;</div><div class="check-text">صفحات: من نحن، سياسة الارجاع، الاسئلة الشائعة، تواصل معنا</div></div>
+</div>
+
+<div class="sub-title">الدفع والشحن</div>
+<div class="checklist">
+    <div class="checklist-item"><div class="check-icon">&#10003;</div><div class="check-text">تفعيل الدفع عند الاستلام</div></div>
+    <div class="checklist-item"><div class="check-icon">&#10003;</div><div class="check-text">تفعيل بوابة دفع الكترونية واحدة على الاقل</div></div>
+    <div class="checklist-item"><div class="check-icon">&#10003;</div><div class="check-text">اختبار عملية الشراء الكاملة بكل طريقة دفع</div></div>
+    <div class="checklist-item"><div class="check-icon">&#10003;</div><div class="check-text">اعداد مناطق واسعار الشحن</div></div>
+    <div class="checklist-item"><div class="check-icon">&#10003;</div><div class="check-text">اعداد العملة والضريبة</div></div>
+</div>
+
+<div class="sub-title">الاختبار النهائي</div>
+<div class="checklist">
+    <div class="checklist-item"><div class="check-icon">&#10003;</div><div class="check-text">اختبار على الجوال والتابلت (تصميم متجاوب)</div></div>
+    <div class="checklist-item"><div class="check-icon">&#10003;</div><div class="check-text">اختبار البحث والتصفية</div></div>
+    <div class="checklist-item"><div class="check-icon">&#10003;</div><div class="check-text">اختبار عملية الشراء من البداية للنهاية</div></div>
+    <div class="checklist-item"><div class="check-icon">&#10003;</div><div class="check-text">اختبار نظام الارجاع</div></div>
+    <div class="checklist-item"><div class="check-icon">&#10003;</div><div class="check-text">مراجعة جميع النصوص العربية</div></div>
+</div>
+
+<!-- ─── Chapter 9: Maintenance ─── -->
+<div class="chapter-header">
+    <div class="section-tag">الفصل التاسع</div>
+    <div class="section-title">الصيانة والتطوير المستمر</div>
+    <div class="divider"></div>
+</div>
+
+<div class="body-text">
+    اطلاق المتجر هو فقط البداية. النجاح المستمر يتطلب صيانة دورية وتحديثات مستمرة وتطوير بناءً على ملاحظات العملاء وتحليلات البيانات. فيما يلي خطة الصيانة والتطوير المقترحة.
+</div>
+
+<div class="card">
+    <div class="card-title">المهام اليومية</div>
+    <div class="card-text">
+        مراجعة الطلبات الجديدة ومعالجتها، الرد على استفسارات العملاء خلال 24 ساعة كحد اقصى، مراقبة اداء الموقع والخادم، مراجعة اي اخطاء تقنية في السجلات، متابعة التعليقات والرسائل على وسائل التواصل الاجتماعي، وتحديث المخزون عند نفاد اي منتج.
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-title">المهام الاسبوعية</div>
+    <div class="card-text">
+        اضافة منتجات جديدة وتحديث المنتجات الحالية، مراجعة تقارير المبيعات وتحليل الاتجاهات، تحديث العروض والكوبونات، نشر محتوى تسويقي جديد، مراجعة تقييمات العملاء والرد عليها، واجراء نسخ احتياطي كامل لقاعدة البيانات والملفات.
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-title">المهام الشهرية</div>
+    <div class="card-text">
+        تحديث منصة Bagisto الى اخر اصدار، مراجعة امان المتجر والتحقق من وجود ثغرات، تحليل اداء المتجر بشكل شامل (معدل التحويل، متوسط قيمة الطلب، مصادر الزيارات)، تحديث سياسات الشحن والدفع حسب الحاجة، تخطيط العروض الموسمية للشهر القادم، وتحسين محركات البحث SEO.
+    </div>
+</div>
+
+<div class="highlight-box">
+    <div class="highlight-title">خطة التطوير المستقبلية</div>
+    <div class="highlight-text">
+        بعد استقرار المتجر وتحقيق مبيعات ثابتة يمكنك التفكير في التوسعات التالية: اضافة تطبيق جوال عبر Flutter (متوفر رسمياً من Bagisto)، التوسع الى سوق متعدد البائعين (Marketplace)، استخدام الذكاء الاصطناعي لتوليد اوصاف المنتجات وتحسين البحث عبر وحدة MagicAI، اضافة نظام حجوزات لخدمات التفصيل، والتوسع الجغرافي لاسواق جديدة.
+    </div>
+</div>
+
+</div>
+
+<!-- ════════════════════════════════════════════
+     ENDING PAGE
+     ════════════════════════════════════════════ -->
+<div class="ending">
+    <div class="ending-line"></div>
+    <div class="ending-title">ابدا رحلتك الان</div>
+    <div class="ending-text">
+        كل مشروع عظيم بدا بفكرة وبالخطوة الاولى. متجر المريش شوب يمتلك كل المقومات ليكون منصة تسوق ناجحة ومميزة. اتبع الخطوات في هذا الدليل وابدا التنفيذ.
+    </div>
+    <div class="ending-line"></div>
+    <div class="ending-store">Al-Mareesh Shop</div>
+</div>
+
+</body>
+</html>
