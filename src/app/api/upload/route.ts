@@ -1,6 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { writeFile, mkdir } from 'fs/promises';
-import path from 'path';
 
 export async function POST(request: NextRequest) {
   try {
@@ -17,26 +15,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'نوع الملف غير مسموح به' }, { status: 400 });
     }
 
-    // Validate file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      return NextResponse.json({ error: 'حجم الملف كبير جداً (الحد 5MB)' }, { status: 400 });
+    // Validate file size (max 2MB for base64 storage)
+    if (file.size > 2 * 1024 * 1024) {
+      return NextResponse.json({ error: 'حجم الملف كبير جداً (الحد 2MB). يرجى ضغط الصورة أولاً' }, { status: 400 });
     }
 
+    // Convert to base64 data URL - works on Vercel (no filesystem needed)
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
+    const base64 = buffer.toString('base64');
+    const mimeType = file.type || 'image/jpeg';
+    const dataUrl = `data:${mimeType};base64,${base64}`;
 
-    // Generate unique filename
-    const ext = path.extname(file.name) || '.jpg';
-    const filename = `${Date.now()}-${Math.random().toString(36).substring(2, 8)}${ext}`;
-    
-    const uploadDir = path.join(process.cwd(), 'public', 'uploads');
-    await mkdir(uploadDir, { recursive: true });
-    
-    const filepath = path.join(uploadDir, filename);
-    await writeFile(filepath, buffer);
-
-    const url = `/uploads/${filename}`;
-    return NextResponse.json({ url, filename });
+    return NextResponse.json({ url: dataUrl });
   } catch (error) {
     console.error('Upload error:', error);
     return NextResponse.json({ error: 'خطأ في رفع الملف' }, { status: 500 });
