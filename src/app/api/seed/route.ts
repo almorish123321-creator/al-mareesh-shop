@@ -77,8 +77,12 @@ export async function GET() {
     ] });
 
     return Response.json({ message: 'تم تعبئة قاعدة البيانات بنجاح', categories: categories.length, products: productsCreated });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Seed error:', error);
-    return Response.json({ error: 'خطأ في تعبئة قاعدة البيانات' }, { status: 500 });
+    return Response.json({
+      error: 'خطأ في تعبئة قاعدة البيانات',
+      details: error.message?.substring(0, 300),
+      hint: 'هل قمت بزيارة /api/setup أولاً لإنشاء الجداول؟ تأكد أيضاً من ضبط DATABASE_URL في Vercel'
+    }, { status: 500 });
   }
 }
