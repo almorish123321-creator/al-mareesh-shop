@@ -71,6 +71,16 @@ interface SettingsType {
 }
 
 /* ─── HELPERS ─── */
+const safeJsonParse = (str: string | null | undefined, fallback: any = []) => {
+  try {
+    if (!str || str.trim() === '') return fallback;
+    const parsed = JSON.parse(str);
+    return Array.isArray(parsed) ? parsed : fallback;
+  } catch {
+    return fallback;
+  }
+};
+
 const formatPrice = (price: number) => {
   return price.toLocaleString('ar-YE') + ' ر.ي';
 };
@@ -305,7 +315,7 @@ export default function Home() {
   const addToCart = (product: ProductType) => {
     if (!selectedSize && product.sizes) { showNotification('يرجى اختيار المقاس', 'error'); return; }
     if (!selectedColor && product.colors) { showNotification('يرجى اختيار اللون', 'error'); return; }
-    const images = JSON.parse(product.images || '[]');
+    const images = safeJsonParse(product.images);
     const existing = cart.find((c: CartItemType) =>
       c.productId === product.id && c.size === selectedSize && c.color === selectedColor
     );
@@ -871,7 +881,7 @@ export default function Home() {
 
   /* ─── PRODUCT CARD ─── */
   const ProductCard = ({ product }: { product: ProductType }) => {
-    const images = JSON.parse(product.images || '[]');
+    const images = safeJsonParse(product.images);
     const discount = calcDiscount(product.price, product.comparePrice);
     const isWished = wishlist.includes(product.id);
 
@@ -1049,9 +1059,9 @@ export default function Home() {
       </div>
     );
 
-    const images = JSON.parse(currentProduct.images || '[]');
-    const sizes: string[] = JSON.parse(currentProduct.sizes || '[]');
-    const colors: { name: string; hex: string }[] = JSON.parse(currentProduct.colors || '[]');
+    const images = safeJsonParse(currentProduct.images);
+    const sizes: string[] = safeJsonParse(currentProduct.sizes);
+    const colors: { name: string; hex: string }[] = safeJsonParse(currentProduct.colors, []);
     const discount = calcDiscount(currentProduct.price, currentProduct.comparePrice);
     const relatedProducts = products.filter(p => p.categoryId === currentProduct.categoryId && p.id !== currentProduct.id).slice(0, 4);
     const isWished = wishlist.includes(currentProduct.id);
@@ -1825,7 +1835,7 @@ export default function Home() {
                         <TableRow key={p.id}>
                           <TableCell>
                             <div className="flex items-center gap-2">
-                              <img src={JSON.parse(p.images || '[]')[0] || ''} alt="" className="w-10 h-12 object-cover rounded" />
+                              <img src={safeJsonParse(p.images)[0] || ''} alt="" className="w-10 h-12 object-cover rounded" />
                               <div><p className="text-sm font-medium line-clamp-1">{p.name}</p><p className="text-xs text-muted-foreground">{p.sku}</p></div>
                             </div>
                           </TableCell>
@@ -2007,7 +2017,7 @@ export default function Home() {
       const res = await fetch('/api/upload', { method: 'POST', body: formData });
       const data = await res.json();
       if (data.error) { showNotification(data.error, 'error'); return; }
-      const currentImages = JSON.parse(editProduct?.images || '[]');
+      const currentImages = safeJsonParse(editProduct?.images);
       // Ensure we have 5 slots
       while (currentImages.length < 5) currentImages.push('');
       const slotIndex: Record<string, number> = { main: 0, angle1: 1, angle2: 2, reality1: 3, reality2: 4 };
@@ -2019,7 +2029,7 @@ export default function Home() {
   };
 
   const removeImage = (slot: string) => {
-    const currentImages = JSON.parse(editProduct?.images || '[]');
+    const currentImages = safeJsonParse(editProduct?.images);
     while (currentImages.length < 5) currentImages.push('');
     const slotIndex: Record<string, number> = { main: 0, angle1: 1, angle2: 2, reality1: 3, reality2: 4 };
     currentImages[slotIndex[slot]] = '';
@@ -2028,7 +2038,7 @@ export default function Home() {
 
   /* ─── ADMIN PRODUCT MODAL ─── */
   const ProductModal = () => {
-    const currentImages = JSON.parse(editProduct?.images || '[]');
+    const currentImages = safeJsonParse(editProduct?.images);
     while (currentImages.length < 5) currentImages.push('');
     const imageSlots = [
       { key: 'main', label: 'الصورة الرئيسية', icon: '📸', required: true },
