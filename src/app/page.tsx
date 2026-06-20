@@ -21,7 +21,7 @@ import {
   BarChart3, Eye, Edit, Store, Grid3X3, Phone, Mail, MapPin,
   Facebook, Twitter, Instagram, Youtube, Check, AlertCircle, ChevronDown,
   Clock, CreditCard, Banknote, Wallet, Gift, Sparkles, Crown, Baby,
-  Shirt, Footprints, Zap, ArrowRight, Copy, Share2
+  Shirt, Footprints, Zap, ArrowRight, Copy, Share2, MessageCircle, Send
 } from 'lucide-react';
 
 /* ─── TYPES ─── */
@@ -1557,10 +1557,9 @@ export default function Home() {
             <TabsTrigger value="register" className="flex-1">إنشاء حساب</TabsTrigger>
           </TabsList>
           <TabsContent value="login" className="mt-4 space-y-4">
-            <div><Label>البريد الإلكتروني</Label><Input type="email" value={authForm.email} onChange={(e) => setAuthForm({ ...authForm, email: e.target.value })} placeholder="admin@mareesh.com" /></div>
+            <div><Label>البريد الإلكتروني</Label><Input type="email" value={authForm.email} onChange={(e) => setAuthForm({ ...authForm, email: e.target.value })} placeholder="بريدك الإلكتروني" /></div>
             <div><Label>كلمة المرور</Label><Input type="password" value={authForm.password} onChange={(e) => setAuthForm({ ...authForm, password: e.target.value })} placeholder="••••••••" /></div>
             <Button onClick={handleLogin} className="w-full bg-mareesh hover:bg-mareesh-dark h-11">تسجيل الدخول</Button>
-            <p className="text-xs text-center text-muted-foreground">للتجربة: admin@mareesh.com / admin123</p>
           </TabsContent>
           <TabsContent value="register" className="mt-4 space-y-4">
             <div><Label>الاسم</Label><Input value={authForm.name} onChange={(e) => setAuthForm({ ...authForm, name: e.target.value })} placeholder="محمد أحمد" /></div>
@@ -2029,10 +2028,16 @@ export default function Home() {
             </div>
             <p className="text-sm text-[#F5E6D3]/70 leading-relaxed">متجرك المفضل لملابس الأطفال والنسائية والأحذية بأسعار مميزة وجودة عالية.</p>
             <div className="flex gap-3 mt-4">
-              {[Facebook, Twitter, Instagram, Youtube].map((Icon, idx) => (
-                <button key={idx} className="w-9 h-9 bg-[#3D2B24] rounded-lg flex items-center justify-center hover:bg-gold hover:text-mareesh-dark transition-all">
-                  <Icon size={16} />
-                </button>
+              {[
+                { icon: <Send size={16} />, label: 'تلجرام', href: 'https://t.me/almareesh_shop', color: 'hover:bg-[#0088cc]' },
+                { icon: <MessageCircle size={16} />, label: 'واتساب', href: 'https://wa.me/966500000000', color: 'hover:bg-[#25D366]' },
+                { icon: <Instagram size={16} />, label: 'انستقرام', href: '#', color: 'hover:bg-[#E1306C]' },
+                { icon: <Facebook size={16} />, label: 'فيسبوك', href: '#', color: 'hover:bg-[#1877F2]' },
+              ].map((social, idx) => (
+                <a key={idx} href={social.href} target="_blank" rel="noopener noreferrer"
+                  className={`w-9 h-9 bg-[#3D2B24] rounded-lg flex items-center justify-center ${social.color} hover:text-white transition-all`} title={social.label}>
+                  {social.icon}
+                </a>
               ))}
             </div>
           </div>
@@ -2105,6 +2110,20 @@ export default function Home() {
       </main>
 
       {view !== 'admin' && <Footer />}
+
+      {/* أزرار التواصل العائمة */}
+      {view !== 'admin' && (
+        <div className="fixed bottom-6 left-6 flex flex-col gap-3 z-50">
+          <a href="https://wa.me/966500000000" target="_blank" rel="noopener noreferrer"
+            className="w-14 h-14 bg-[#25D366] text-white rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform" title="تواصل عبر واتساب">
+            <MessageCircle size={28} />
+          </a>
+          <a href="https://t.me/almareesh_shop" target="_blank" rel="noopener noreferrer"
+            className="w-14 h-14 bg-[#0088cc] text-white rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform" title="تواصل عبر تلجرام">
+            <Send size={28} />
+          </a>
+        </div>
+      )}
     </div>
   );
 }
