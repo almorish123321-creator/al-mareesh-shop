@@ -25,9 +25,9 @@ export async function GET() {
     });
 
     const monthlySales = await db.$queryRaw`
-      SELECT strftime('%Y-%m', createdAt) as month, SUM(total) as revenue, COUNT(*) as orders
-      FROM \`Order\` WHERE status != 'cancelled'
-      GROUP BY strftime('%Y-%m', createdAt)
+      SELECT TO_CHAR("createdAt", 'YYYY-MM') as month, SUM("total") as revenue, COUNT(*) as orders
+      FROM "Order" WHERE status != 'cancelled'
+      GROUP BY TO_CHAR("createdAt", 'YYYY-MM')
       ORDER BY month DESC LIMIT 12
     `;
 
