@@ -787,7 +787,7 @@ export default function Home() {
               </Button>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-              {featuredProducts.map((p) => (<ProductCard key={p.id} product={p} />))}
+              {featuredProducts.map((p) => (<div key={p.id}>{ProductCard({ product: p })}</div>))}
             </div>
           </section>
         )}
@@ -825,7 +825,7 @@ export default function Home() {
               </Button>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-              {bestsellerProducts.map((p) => (<ProductCard key={p.id} product={p} />))}
+              {bestsellerProducts.map((p) => (<div key={p.id}>{ProductCard({ product: p })}</div>))}
             </div>
           </section>
         )}
@@ -845,7 +845,7 @@ export default function Home() {
               </Button>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-              {newProducts.map((p) => (<ProductCard key={p.id} product={p} />))}
+              {newProducts.map((p) => (<div key={p.id}>{ProductCard({ product: p })}</div>))}
             </div>
           </section>
         )}
@@ -1020,7 +1020,7 @@ export default function Home() {
           {/* Grid */}
           {paginatedProducts.length > 0 ? (
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
-              {paginatedProducts.map((p) => (<ProductCard key={p.id} product={p} />))}
+              {paginatedProducts.map((p) => (<div key={p.id}>{ProductCard({ product: p })}</div>))}
             </div>
           ) : (
             <div className="text-center py-20">
@@ -1286,7 +1286,7 @@ export default function Home() {
           <section className="mt-12">
             <h2 className="text-xl font-bold text-mareesh mb-6">منتجات مشابهة</h2>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-              {relatedProducts.map((p) => (<ProductCard key={p.id} product={p} />))}
+              {relatedProducts.map((p) => (<div key={p.id}>{ProductCard({ product: p })}</div>))}
             </div>
           </section>
         )}
@@ -2297,23 +2297,23 @@ export default function Home() {
   return (
     <div className="min-h-screen flex flex-col bg-cream" dir="rtl">
       <Notification />
-      <AuthModal />
-      <ProductModal />
-      <CategoryModal />
+      {AuthModal()}
+      {ProductModal()}
+      {CategoryModal()}
 
-      <Header />
+      {Header()}
 
       <main className="flex-1">
-        {view === 'home' && <HomeView />}
-        {view === 'shop' && <ShopView />}
-        {view === 'product' && <ProductDetailView />}
-        {view === 'cart' && <CartView />}
-        {view === 'checkout' && <CheckoutView />}
-        {view === 'admin' && <AdminView />}
-        {view === 'contact' && <ContactView />}
+        {view === 'home' && HomeView()}
+        {view === 'shop' && ShopView()}
+        {view === 'product' && ProductDetailView()}
+        {view === 'cart' && CartView()}
+        {view === 'checkout' && CheckoutView()}
+        {view === 'admin' && AdminView()}
+        {view === 'contact' && ContactView()}
       </main>
 
-      {view !== 'admin' && <Footer />}
+      {view !== 'admin' && Footer()}
 
       {/* أزرار التواصل العائمة */}
       {view !== 'admin' && (
