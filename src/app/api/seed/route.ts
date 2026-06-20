@@ -34,6 +34,14 @@ const products = [
 
 export async function GET() {
   try {
+    // Always ensure admin user exists
+    const existingAdmin = await db.user.findUnique({ where: { email: 'admin@mareesh.com' } });
+    if (!existingAdmin) {
+      await db.user.create({ data: { email: 'admin@mareesh.com', name: 'مدير المريش شوب', password: Buffer.from('admin123').toString('base64'), role: 'admin', isActive: true } });
+    } else if (existingAdmin.role !== 'admin') {
+      await db.user.update({ where: { email: 'admin@mareesh.com' }, data: { role: 'admin' } });
+    }
+
     const existingCategories = await db.category.count();
     if (existingCategories > 0) {
       return Response.json({ message: 'قاعدة البيانات مليئة بالفعل', categories: existingCategories });

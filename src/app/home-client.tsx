@@ -279,7 +279,13 @@ export default function Home() {
       if (data.error) { showNotification(data.error, 'error'); return; }
       setUser(data);
       setShowAuthModal(false);
-      showNotification('تم تسجيل الدخول بنجاح', 'success');
+      if (data.role === 'admin') {
+        setView('admin');
+        setAdminTab('dashboard');
+        showNotification('مرحباً بك في لوحة التحكم!', 'success');
+      } else {
+        showNotification('تم تسجيل الدخول بنجاح', 'success');
+      }
     } catch { showNotification('خطأ في تسجيل الدخول', 'error'); }
   };
 
