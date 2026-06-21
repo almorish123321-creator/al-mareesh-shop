@@ -3049,9 +3049,156 @@ export default function Home() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div><Label>المقاسات (مثل: S,M,L,XL)</Label><Input value={editProduct?.sizes || '[]'} onChange={(e) => setEditProduct({ ...editProduct, sizes: e.target.value })} placeholder='["S","M","L","XL"]' /></div>
-              <div><Label>الألوان (JSON)</Label><Input value={editProduct?.colors || '[]'} onChange={(e) => setEditProduct({ ...editProduct, colors: e.target.value })} placeholder='[{"name":"أحمر","hex":"#FF0000"}]' /></div>
+            {/* ─── المقاسات - واجهة سهلة ─── */}
+            <div className="border border-border rounded-xl p-4">
+              <Label className="mb-2 block font-semibold">المقاسات</Label>
+              {/* المقاسات المختارة حالياً */}
+              {(() => {
+                const currentSizes: string[] = safeJsonParse(editProduct?.sizes);
+                return (
+                  <>
+                    {currentSizes.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mb-3">
+                        {currentSizes.map((s) => (
+                          <span key={s} className="inline-flex items-center gap-1 px-3 py-1.5 bg-mareesh/10 text-mareesh rounded-lg text-sm font-medium border border-mareesh/20">
+                            {s}
+                            <button type="button" onClick={() => {
+                              const updated = currentSizes.filter(x => x !== s);
+                              setEditProduct({ ...editProduct!, sizes: JSON.stringify(updated) });
+                            }} className="w-4 h-4 flex items-center justify-center rounded-full hover:bg-red-100 hover:text-red-500 transition-colors"><X size={10} /></button>
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    {/* أزرار مقاسات جاهزة */}
+                    <div className="mb-3">
+                      <p className="text-xs text-muted-foreground mb-1.5">مقاسات شائعة - اضغط لإضافة:</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL', '4XL', '5XL', '36', '38', '40', '42', '44', '46', '48', '50', '52', 'Free Size'].map((sz) => {
+                          const isSelected = currentSizes.includes(sz);
+                          return (
+                            <button key={sz} type="button" onClick={() => {
+                              const updated = isSelected ? currentSizes.filter(x => x !== sz) : [...currentSizes, sz];
+                              setEditProduct({ ...editProduct!, sizes: JSON.stringify(updated) });
+                            }} className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition-all ${isSelected ? 'bg-mareesh text-white border-mareesh' : 'bg-white border-gray-200 hover:border-mareesh/50 text-gray-700'}`}>
+                              {sz}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                    {/* إدخال مقاس مخصص */}
+                    <div className="flex gap-2">
+                      <Input
+                        id="custom-size-input"
+                        placeholder="مقاس مخصص..."
+                        className="flex-1 h-9 text-sm"
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            const val = (e.target as HTMLInputElement).value.trim();
+                            if (val && !currentSizes.includes(val)) {
+                              setEditProduct({ ...editProduct!, sizes: JSON.stringify([...currentSizes, val]) });
+                              (e.target as HTMLInputElement).value = '';
+                            }
+                          }
+                        }}
+                      />
+                      <Button type="button" variant="outline" size="sm" className="h-9" onClick={() => {
+                        const input = document.getElementById('custom-size-input') as HTMLInputElement;
+                        const val = input?.value?.trim();
+                        if (val && !currentSizes.includes(val)) {
+                          setEditProduct({ ...editProduct!, sizes: JSON.stringify([...currentSizes, val]) });
+                          input.value = '';
+                        }
+                      }}>
+                        <Plus size={14} />
+                      </Button>
+                    </div>
+                  </>
+                );
+              })()}
+            </div>
+
+            {/* ─── الألوان - واجهة سهلة ─── */}
+            <div className="border border-border rounded-xl p-4">
+              <Label className="mb-2 block font-semibold">الألوان</Label>
+              {(() => {
+                const currentColors: { name: string; hex: string }[] = safeJsonParse(editProduct?.colors);
+                return (
+                  <>
+                    {/* الألوان المختارة حالياً */}
+                    {currentColors.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mb-3">
+                        {currentColors.map((c, i) => (
+                          <span key={i} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium border border-gray-200 bg-white">
+                            <span className="w-5 h-5 rounded-full border border-gray-300 shrink-0" style={{ backgroundColor: c.hex }} />
+                            {c.name}
+                            <button type="button" onClick={() => {
+                              const updated = currentColors.filter((_, idx) => idx !== i);
+                              setEditProduct({ ...editProduct!, colors: JSON.stringify(updated) });
+                            }} className="w-4 h-4 flex items-center justify-center rounded-full hover:bg-red-100 hover:text-red-500 transition-colors"><X size={10} /></button>
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    {/* ألوان جاهزة سريعة */}
+                    <div className="mb-3">
+                      <p className="text-xs text-muted-foreground mb-1.5">ألوان شائعة - اضغط لإضافة:</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {[
+                          { name: 'أسود', hex: '#000000' }, { name: 'أبيض', hex: '#FFFFFF' },
+                          { name: 'أحمر', hex: '#EF4444' }, { name: 'أزرق', hex: '#3B82F6' },
+                          { name: 'أخضر', hex: '#22C55E' }, { name: 'أصفر', hex: '#EAB308' },
+                          { name: 'برتقالي', hex: '#F97316' }, { name: 'بنفسجي', hex: '#8B5CF6' },
+                          { name: 'وردي', hex: '#EC4899' }, { name: 'بني', hex: '#92400E' },
+                          { name: 'رمادي', hex: '#6B7280' }, { name: 'بيج', hex: '#D4A574' },
+                          { name: 'كحلي', hex: '#1E3A5F' }, { name: 'زيتي', hex: '#556B2F' },
+                          { name: 'فستقي', hex: '#93C572' }, { name: 'سماوي', hex: '#06B6D4' },
+                        ].map((preset) => {
+                          const isAdded = currentColors.some(c => c.hex === preset.hex);
+                          return (
+                            <button key={preset.hex} type="button" onClick={() => {
+                              if (isAdded) {
+                                const updated = currentColors.filter(c => c.hex !== preset.hex);
+                                setEditProduct({ ...editProduct!, colors: JSON.stringify(updated) });
+                              } else {
+                                setEditProduct({ ...editProduct!, colors: JSON.stringify([...currentColors, preset]) });
+                              }
+                            }} className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium border transition-all ${isAdded ? 'border-mareesh bg-mareesh/5 ring-1 ring-mareesh/30' : 'border-gray-200 hover:border-mareesh/50'}`}>
+                              <span className="w-3.5 h-3.5 rounded-full border border-gray-300 shrink-0" style={{ backgroundColor: preset.hex }} />
+                              {preset.name}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                    {/* إدخال لون مخصص */}
+                    <div className="flex gap-2 items-end">
+                      <div className="flex-1">
+                        <p className="text-xs text-muted-foreground mb-1">اسم اللون</p>
+                        <Input id="custom-color-name" placeholder="مثال: سماوي فاتح" className="h-9 text-sm" />
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground mb-1">اللون</p>
+                        <input id="custom-color-picker" type="color" defaultValue="#6366F1" className="w-10 h-9 rounded-lg border border-gray-200 cursor-pointer p-0.5" />
+                      </div>
+                      <Button type="button" size="sm" className="h-9 bg-mareesh" onClick={() => {
+                        const nameInput = document.getElementById('custom-color-name') as HTMLInputElement;
+                        const colorPicker = document.getElementById('custom-color-picker') as HTMLInputElement;
+                        const name = nameInput?.value?.trim();
+                        const hex = colorPicker?.value;
+                        if (name && hex) {
+                          setEditProduct({ ...editProduct!, colors: JSON.stringify([...currentColors, { name, hex }]) });
+                          nameInput.value = '';
+                        }
+                      }}>
+                        <Plus size={14} className="ml-1" /> أضف
+                      </Button>
+                    </div>
+                  </>
+                );
+              })()}
             </div>
             <div className="flex items-center gap-4 flex-wrap">
               <label className="flex items-center gap-2 cursor-pointer text-sm">
