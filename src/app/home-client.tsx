@@ -99,6 +99,9 @@ const formatPrice = (price: number) => {
   return price.toLocaleString('ar-SA') + ' ر.س';
 };
 
+// سعر الصرف: 1 ر.س ≈ 267 ر.ي
+const YER_RATE = 267;
+
 const calcDiscount = (price: number, compare?: number) => {
   if (!compare || compare <= price) return 0;
   return Math.round(((compare - price) / compare) * 100);
@@ -220,7 +223,11 @@ export default function Home({ autoAdmin }: { autoAdmin?: boolean } = {}) {
   const [cartNotes, setCartNotes] = useState('');
 
   /* ─── CURRENCY ─── */
+  const [currency, setCurrency] = useState<'SAR' | 'YER'>('SAR');
   const formatPriceCurrency = (price: number) => {
+    if (currency === 'YER') {
+      return Math.round(price * YER_RATE).toLocaleString('ar-SA') + ' ر.ي';
+    }
     return price.toLocaleString('ar-SA') + ' ر.س';
   };
 
@@ -467,7 +474,7 @@ export default function Home({ autoAdmin }: { autoAdmin?: boolean } = {}) {
       const data = await res.json();
       if (data.error) { showNotification(data.error, 'error'); return; }
       setCouponDiscount(data.discount);
-      showNotification(`تم تطبيق الخصم: ${formatPrice(data.discount)}`, 'success');
+      showNotification(`تم تطبيق الخصم: ${formatPriceCurrency(data.discount)}`, 'success');
     } catch { showNotification('خطأ في تطبيق الكوبون', 'error'); }
   };
 
@@ -898,10 +905,16 @@ export default function Home({ autoAdmin }: { autoAdmin?: boolean } = {}) {
       {/* Top bar */}
       <div className="bg-mareesh-dark text-white text-xs py-1.5">
         <div className="max-w-7xl mx-auto px-4 flex justify-between items-center">
-          <span className="flex items-center gap-1"><Truck size={12} /> شحن مجاني للطلبات فوق {settings.free_shipping_threshold || '5000'} ر.س</span>
+          <span className="flex items-center gap-1"><Truck size={12} /> شحن مجاني للطلبات فوق {settings.free_shipping_threshold || '5000'} {currency === 'SAR' ? 'ر.س' : 'ر.ي'}</span>
           <div className="flex items-center gap-3">
             <a href="https://wa.me/967776792012" target="_blank" rel="noopener noreferrer" className="hidden sm:inline-flex items-center gap-1 hover:text-gold transition-colors"><MessageCircle size={12} /> +967776792012</a>
-            <span className="px-2 py-0.5 bg-white/20 rounded text-xs font-bold">ر.س</span>
+            <button
+              onClick={() => setCurrency(currency === 'SAR' ? 'YER' : 'SAR')}
+              className="px-2 py-0.5 bg-white/20 rounded text-xs font-bold hover:bg-white/30 transition-colors flex items-center gap-1"
+              title={currency === 'SAR' ? 'التحويل إلى ريال يمني' : 'التحويل إلى ريال سعودي'}
+            >
+              {currency === 'SAR' ? '🇸🇦 ر.س' : '🇾🇪 ر.ي'}
+            </button>
           </div>
         </div>
       </div>
@@ -1603,10 +1616,10 @@ export default function Home({ autoAdmin }: { autoAdmin?: boolean } = {}) {
 
             {/* Price */}
             <div className="flex items-center gap-3 mb-6">
-              <span className="text-3xl font-bold text-mareesh">{formatPrice(currentProduct.price)}</span>
+              <span className="text-3xl font-bold text-mareesh">{formatPriceCurrency(currentProduct.price)}</span>
               {currentProduct.showDiscount && currentProduct.comparePrice && (
                 <>
-                  <span className="text-lg text-muted-foreground line-through">{formatPrice(currentProduct.comparePrice)}</span>
+                  <span className="text-lg text-muted-foreground line-through">{formatPriceCurrency(currentProduct.comparePrice)}</span>
                   <Badge className="bg-red-500 text-white">وفر {discount}%</Badge>
                 </>
               )}
@@ -1814,8 +1827,8 @@ export default function Home({ autoAdmin }: { autoAdmin?: boolean } = {}) {
                               <button onClick={() => updateCartQty(idx, item.quantity + 1)} className="w-8 h-8 flex items-center justify-center hover:bg-cream-dark rounded-l-md"><Plus size={12} /></button>
                             </div>
                           </TableCell>
-                          <TableCell className="text-sm font-medium">{formatPrice(item.price)}</TableCell>
-                          <TableCell className="text-sm font-bold text-mareesh">{formatPrice(item.price * item.quantity)}</TableCell>
+                          <TableCell className="text-sm font-medium">{formatPriceCurrency(item.price)}</TableCell>
+                          <TableCell className="text-sm font-bold text-mareesh">{formatPriceCurrency(item.price * item.quantity)}</TableCell>
                           <TableCell>
                             <Button variant="ghost" size="icon" onClick={() => removeCartItem(idx)} className="text-red-500 hover:text-red-700 hover:bg-red-50">
                               <Trash2 size={16} />
@@ -1843,7 +1856,7 @@ export default function Home({ autoAdmin }: { autoAdmin?: boolean } = {}) {
                             <span className="w-7 h-7 flex items-center justify-center text-xs border-x">{item.quantity}</span>
                             <button onClick={() => updateCartQty(idx, item.quantity + 1)} className="w-7 h-7 flex items-center justify-center"><Plus size={12} /></button>
                           </div>
-                          <span className="font-bold text-mareesh text-sm">{formatPrice(item.price * item.quantity)}</span>
+                          <span className="font-bold text-mareesh text-sm">{formatPriceCurrency(item.price * item.quantity)}</span>
                         </div>
                       </div>
                       <Button variant="ghost" size="icon" onClick={() => removeCartItem(idx)} className="text-red-500 shrink-0 h-8 w-8">
@@ -1873,17 +1886,17 @@ export default function Home({ autoAdmin }: { autoAdmin?: boolean } = {}) {
                 </div>
                 <Separator />
                 <div className="space-y-2 text-sm">
-                  <div className="flex justify-between"><span className="text-muted-foreground">المجموع الفرعي</span><span>{formatPrice(cartSubtotal)}</span></div>
-                  <div className="flex justify-between"><span className="text-muted-foreground">الشحن</span><span>{shippingCost === 0 ? <span className="text-green-600">مجاني</span> : formatPrice(shippingCost)}</span></div>
-                  <div className="flex justify-between"><span className="text-muted-foreground">الضريبة (2%)</span><span>{formatPrice(cartTax)}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">المجموع الفرعي</span><span>{formatPriceCurrency(cartSubtotal)}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">الشحن</span><span>{shippingCost === 0 ? <span className="text-green-600">مجاني</span> : formatPriceCurrency(shippingCost)}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">الضريبة (2%)</span><span>{formatPriceCurrency(cartTax)}</span></div>
                   {couponDiscount > 0 && (
-                    <div className="flex justify-between text-green-600"><span>الخصم</span><span>-{formatPrice(couponDiscount)}</span></div>
+                    <div className="flex justify-between text-green-600"><span>الخصم</span><span>-{formatPriceCurrency(couponDiscount)}</span></div>
                   )}
                 </div>
                 <Separator />
                 <div className="flex justify-between font-bold text-lg">
                   <span>الإجمالي</span>
-                  <span className="text-mareesh">{formatPrice(cartTotal)}</span>
+                  <span className="text-mareesh">{formatPriceCurrency(cartTotal)}</span>
                 </div>
                 <Button onClick={() => { setView('checkout'); setCheckoutStep(1); setOrderPlaced(false); }} className="w-full bg-gold hover:bg-gold-light text-white font-bold h-12 rounded-xl" size="lg">
                   إتمام الشراء
@@ -1968,7 +1981,7 @@ export default function Home({ autoAdmin }: { autoAdmin?: boolean } = {}) {
                       <Select value={checkoutForm.city} onValueChange={(v) => setCheckoutForm({ ...checkoutForm, city: v })}>
                         <SelectTrigger><SelectValue placeholder="اختر المحافظة" /></SelectTrigger>
                         <SelectContent>
-                          {Object.keys(yemenCities).map(city => <SelectItem key={city} value={city}>{city} {yemenCities[city] === 0 ? '(شحن مجاني)' : `(${formatPrice(yemenCities[city])} شحن)`}</SelectItem>)}
+                          {Object.keys(yemenCities).map(city => <SelectItem key={city} value={city}>{city} {yemenCities[city] === 0 ? '(شحن مجاني)' : `(${formatPriceCurrency(yemenCities[city])} شحن)`}</SelectItem>)}
                         </SelectContent>
                       </Select>
                     </div>
@@ -2073,7 +2086,7 @@ export default function Home({ autoAdmin }: { autoAdmin?: boolean } = {}) {
                           <p className="text-sm font-medium line-clamp-1">{item.name}</p>
                           <p className="text-xs text-muted-foreground">الكمية: {item.quantity}</p>
                         </div>
-                        <span className="text-sm font-bold text-mareesh">{formatPrice(item.price * item.quantity)}</span>
+                        <span className="text-sm font-bold text-mareesh">{formatPriceCurrency(item.price * item.quantity)}</span>
                       </div>
                     ))}
                   </div>
@@ -2096,15 +2109,15 @@ export default function Home({ autoAdmin }: { autoAdmin?: boolean } = {}) {
                 {cart.map((item: CartItemType, idx: number) => (
                   <div key={idx} className="flex justify-between">
                     <span className="text-muted-foreground line-clamp-1">{item.name} × {item.quantity}</span>
-                    <span className="font-medium">{formatPrice(item.price * item.quantity)}</span>
+                    <span className="font-medium">{formatPriceCurrency(item.price * item.quantity)}</span>
                   </div>
                 ))}
                 <Separator />
-                <div className="flex justify-between"><span className="text-muted-foreground">المجموع الفرعي</span><span>{formatPrice(cartSubtotal)}</span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">الشحن</span><span>{shippingCost === 0 ? <span className="text-green-600">مجاني</span> : formatPrice(shippingCost)}</span></div>
-                {couponDiscount > 0 && <div className="flex justify-between text-green-600"><span>الخصم</span><span>-{formatPrice(couponDiscount)}</span></div>}
+                <div className="flex justify-between"><span className="text-muted-foreground">المجموع الفرعي</span><span>{formatPriceCurrency(cartSubtotal)}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">الشحن</span><span>{shippingCost === 0 ? <span className="text-green-600">مجاني</span> : formatPriceCurrency(shippingCost)}</span></div>
+                {couponDiscount > 0 && <div className="flex justify-between text-green-600"><span>الخصم</span><span>-{formatPriceCurrency(couponDiscount)}</span></div>}
                 <Separator />
-                <div className="flex justify-between font-bold text-lg"><span>الإجمالي</span><span className="text-mareesh">{formatPrice(cartTotal)}</span></div>
+                <div className="flex justify-between font-bold text-lg"><span>الإجمالي</span><span className="text-mareesh">{formatPriceCurrency(cartTotal)}</span></div>
               </CardContent>
             </Card>
           </div>
@@ -2284,7 +2297,7 @@ export default function Home({ autoAdmin }: { autoAdmin?: boolean } = {}) {
                 {[
                   { label: 'المنتجات', value: adminStats.totalProducts, icon: <Package size={22} />, color: 'bg-mareesh' },
                   { label: 'الطلبات', value: adminStats.totalOrders, icon: <ShoppingBag size={22} />, color: 'bg-gold' },
-                  { label: 'الإيرادات', value: formatPrice(adminStats.totalRevenue || 0), icon: <DollarSign size={22} />, color: 'bg-emerald-600' },
+                  { label: 'الإيرادات', value: formatPriceCurrency(adminStats.totalRevenue || 0), icon: <DollarSign size={22} />, color: 'bg-emerald-600' },
                   { label: 'العملاء', value: adminStats.totalUsers, icon: <Users size={22} />, color: 'bg-blue-600' },
                 ].map((stat, idx) => (
                   <Card key={idx}>
@@ -2322,7 +2335,7 @@ export default function Home({ autoAdmin }: { autoAdmin?: boolean } = {}) {
                         <TableRow key={order.id}>
                           <TableCell className="font-mono text-sm">{order.orderNumber}</TableCell>
                           <TableCell className="text-sm">{order.shippingName}</TableCell>
-                          <TableCell className="text-sm font-medium">{formatPrice(order.total)}</TableCell>
+                          <TableCell className="text-sm font-medium">{formatPriceCurrency(order.total)}</TableCell>
                           <TableCell><Badge className={statusColors[order.status] || ''}>{statusMap[order.status] || order.status}</Badge></TableCell>
                         </TableRow>
                       ))}
@@ -2368,7 +2381,7 @@ export default function Home({ autoAdmin }: { autoAdmin?: boolean } = {}) {
                             </div>
                           </TableCell>
                           <TableCell className="text-sm hidden sm:table-cell">{p.category?.name}</TableCell>
-                          <TableCell className="text-sm font-medium">{formatPrice(p.price)}</TableCell>
+                          <TableCell className="text-sm font-medium">{formatPriceCurrency(p.price)}</TableCell>
                           <TableCell className="text-sm hidden sm:table-cell">
                             {disc > 0 ? (
                               <Badge className="bg-red-100 text-red-700 border border-red-200 text-xs">-{disc}%</Badge>
@@ -2599,8 +2612,8 @@ export default function Home({ autoAdmin }: { autoAdmin?: boolean } = {}) {
                             </div>
                           </div>
                           <div className="text-left">
-                            <p className="font-bold text-mareesh">{formatPrice(item.total)}</p>
-                            <p className="text-xs text-muted-foreground">{formatPrice(item.price)} × {item.quantity}</p>
+                            <p className="font-bold text-mareesh">{formatPriceCurrency(item.total)}</p>
+                            <p className="text-xs text-muted-foreground">{formatPriceCurrency(item.price)} × {item.quantity}</p>
                           </div>
                         </div>
                       ))}
@@ -2611,11 +2624,11 @@ export default function Home({ autoAdmin }: { autoAdmin?: boolean } = {}) {
                   <Card>
                     <CardContent className="p-5">
                       <div className="space-y-3">
-                        <div className="flex justify-between text-sm"><span className="text-muted-foreground">المجموع الفرعي</span><span className="font-medium">{formatPrice(o.subtotal)}</span></div>
-                        <div className="flex justify-between text-sm"><span className="text-muted-foreground">الشحن</span><span className="font-medium">{o.shippingCost === 0 ? <span className="text-emerald-600">مجاني</span> : formatPrice(o.shippingCost)}</span></div>
-                        {o.discount > 0 && <div className="flex justify-between text-sm text-emerald-600"><span>الخصم</span><span>-{formatPrice(o.discount)}</span></div>}
+                        <div className="flex justify-between text-sm"><span className="text-muted-foreground">المجموع الفرعي</span><span className="font-medium">{formatPriceCurrency(o.subtotal)}</span></div>
+                        <div className="flex justify-between text-sm"><span className="text-muted-foreground">الشحن</span><span className="font-medium">{o.shippingCost === 0 ? <span className="text-emerald-600">مجاني</span> : formatPriceCurrency(o.shippingCost)}</span></div>
+                        {o.discount > 0 && <div className="flex justify-between text-sm text-emerald-600"><span>الخصم</span><span>-{formatPriceCurrency(o.discount)}</span></div>}
                         <Separator />
-                        <div className="flex justify-between font-bold text-lg"><span>الإجمالي</span><span className="text-mareesh">{formatPrice(o.total)}</span></div>
+                        <div className="flex justify-between font-bold text-lg"><span>الإجمالي</span><span className="text-mareesh">{formatPriceCurrency(o.total)}</span></div>
                       </div>
                     </CardContent>
                   </Card>
@@ -2711,7 +2724,7 @@ export default function Home({ autoAdmin }: { autoAdmin?: boolean } = {}) {
                           </div>
                           <div>
                             <p className="text-xs text-muted-foreground flex items-center gap-1"><CreditCard size={10} /> المبلغ</p>
-                            <p className="font-bold text-mareesh">{formatPrice(order.total)}</p>
+                            <p className="font-bold text-mareesh">{formatPriceCurrency(order.total)}</p>
                           </div>
                         </div>
                         <div className="flex items-center justify-between mt-3 pt-3 border-t">
@@ -2777,7 +2790,7 @@ export default function Home({ autoAdmin }: { autoAdmin?: boolean } = {}) {
                               <TableCell className="text-sm font-mono" dir="ltr">{customer.phone || '-'}</TableCell>
                               <TableCell className="text-sm">{customer.city || '-'}</TableCell>
                               <TableCell className="text-sm font-bold text-mareesh">{customer.orderCount || 0}</TableCell>
-                              <TableCell className="text-sm font-bold">{customer.totalSpent ? formatPrice(customer.totalSpent) : '0 ر.س'}</TableCell>
+                              <TableCell className="text-sm font-bold">{customer.totalSpent ? formatPriceCurrency(customer.totalSpent) : '0 ر.س'}</TableCell>
                               <TableCell className="text-xs text-muted-foreground">{new Date(customer.createdAt).toLocaleDateString('ar-SA')}</TableCell>
                               <TableCell>
                                 {customer.phone && (
@@ -2798,7 +2811,7 @@ export default function Home({ autoAdmin }: { autoAdmin?: boolean } = {}) {
                           <div className="flex justify-between"><span className="font-medium">{customer.name}</span><span className="text-xs text-muted-foreground">{customer.orderCount || 0} طلب</span></div>
                           <div className="text-sm space-y-1">
                             <div className="flex justify-between"><span className="text-muted-foreground">الهاتف:</span><span dir="ltr">{customer.phone || '-'}</span></div>
-                            <div className="flex justify-between"><span className="text-muted-foreground">المشتريات:</span><span className="font-bold">{customer.totalSpent ? formatPrice(customer.totalSpent) : '0 ر.س'}</span></div>
+                            <div className="flex justify-between"><span className="text-muted-foreground">المشتريات:</span><span className="font-bold">{customer.totalSpent ? formatPriceCurrency(customer.totalSpent) : '0 ر.س'}</span></div>
                           </div>
                           {customer.phone && (
                             <a href={`https://wa.me/${customer.phone.replace(/[^0-9]/g, '')}`} target="_blank" rel="noopener noreferrer"
@@ -2854,8 +2867,8 @@ export default function Home({ autoAdmin }: { autoAdmin?: boolean } = {}) {
                             <TableRow key={coupon.id}>
                               <TableCell className="font-mono font-bold text-mareesh">{coupon.code}</TableCell>
                               <TableCell className="text-sm">{coupon.type === 'percentage' ? 'نسبة مئوية' : 'مبلغ ثابت'}</TableCell>
-                              <TableCell className="text-sm font-bold">{coupon.type === 'percentage' ? `${coupon.value}%` : formatPrice(coupon.value)}</TableCell>
-                              <TableCell className="text-sm">{coupon.minOrder ? formatPrice(coupon.minOrder) : '-'}</TableCell>
+                              <TableCell className="text-sm font-bold">{coupon.type === 'percentage' ? `${coupon.value}%` : formatPriceCurrency(coupon.value)}</TableCell>
+                              <TableCell className="text-sm">{coupon.minOrder ? formatPriceCurrency(coupon.minOrder) : '-'}</TableCell>
                               <TableCell className="text-sm">{coupon.usedCount}/{coupon.usageLimit || '∞'}</TableCell>
                               <TableCell><Badge className={coupon.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>{coupon.isActive ? 'مفعّل' : 'معطّل'}</Badge></TableCell>
                               <TableCell className="text-xs text-muted-foreground">{coupon.expiresAt ? new Date(coupon.expiresAt).toLocaleDateString('ar-SA') : 'بدون انتهاء'}</TableCell>
@@ -2876,7 +2889,7 @@ export default function Home({ autoAdmin }: { autoAdmin?: boolean } = {}) {
                             <Badge className={coupon.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>{coupon.isActive ? 'مفعّل' : 'معطّل'}</Badge>
                           </div>
                           <div className="text-sm">
-                            <span className="font-bold">{coupon.type === 'percentage' ? `${coupon.value}%` : formatPrice(coupon.value)}</span>
+                            <span className="font-bold">{coupon.type === 'percentage' ? `${coupon.value}%` : formatPriceCurrency(coupon.value)}</span>
                             <span className="text-muted-foreground"> • {coupon.type === 'percentage' ? 'نسبة' : 'ثابت'} • استخدام: {coupon.usedCount}/{coupon.usageLimit || '∞'}</span>
                           </div>
                         </div>
@@ -3755,7 +3768,7 @@ export default function Home({ autoAdmin }: { autoAdmin?: boolean } = {}) {
                     <Badge className={statusColors[trackResult.status] || 'bg-gray-100 text-gray-800'}>{statusMap[trackResult.status] || trackResult.status}</Badge>
                   </div>
                   <div className="text-sm space-y-1">
-                    <div className="flex justify-between"><span className="text-muted-foreground">الإجمالي:</span><span className="font-medium">{formatPrice(trackResult.total)}</span></div>
+                    <div className="flex justify-between"><span className="text-muted-foreground">الإجمالي:</span><span className="font-medium">{formatPriceCurrency(trackResult.total)}</span></div>
                     <div className="flex justify-between"><span className="text-muted-foreground">طريقة الدفع:</span><span>{trackResult.paymentMethod === 'karimi' ? 'كريمي' : trackResult.paymentMethod === 'qataybi' ? 'قطيبي' : trackResult.paymentMethod === 'jeeb' ? 'جيب' : 'عند الاستلام'}</span></div>
                     <div className="flex justify-between"><span className="text-muted-foreground">التاريخ:</span><span>{new Date(trackResult.createdAt).toLocaleDateString('ar-SA')}</span></div>
                   </div>
