@@ -69,6 +69,7 @@ model Product {
   isFeatured   Boolean      @default(false)
   isNew        Boolean      @default(false)
   isBestseller Boolean      @default(false)
+  showDiscount Boolean      @default(false)
   isActive     Boolean      @default(true)
   avgRating    Float        @default(0)
   reviewCount  Int          @default(0)

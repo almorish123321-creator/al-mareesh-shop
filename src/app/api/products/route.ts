@@ -9,6 +9,7 @@ export async function GET(request: NextRequest) {
     const featured = searchParams.get('featured');
     const bestseller = searchParams.get('bestseller');
     const isNew = searchParams.get('new');
+    const hasDiscount = searchParams.get('discount');
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '20');
 
@@ -28,6 +29,7 @@ export async function GET(request: NextRequest) {
     if (featured === 'true') where.isFeatured = true;
     if (bestseller === 'true') where.isBestseller = true;
     if (isNew === 'true') where.isNew = true;
+    if (hasDiscount === 'true') { where.showDiscount = true; where.comparePrice = { not: null }; }
 
     const [products, total] = await Promise.all([
       db.product.findMany({

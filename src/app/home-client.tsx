@@ -39,7 +39,7 @@ interface ProductType {
   price: number; comparePrice?: number; sku: string; stock: number;
   images: string; categoryId: string; brand?: string; sizes?: string;
   colors?: string; material?: string; tags?: string; isFeatured: boolean;
-  isNew: boolean; isBestseller: boolean; isActive: boolean; avgRating: number;
+  isNew: boolean; isBestseller: boolean; showDiscount: boolean; isActive: boolean; avgRating: number;
   reviewCount: number; totalSold: number; createdAt: string;
   category?: CategoryType;
 }
@@ -171,6 +171,7 @@ export default function Home() {
   const [shopPage, setShopPage] = useState(1);
   const [shopPriceRange, setShopPriceRange] = useState<[number, number]>([0, 1000]);
   const [shopSelectedCategories, setShopSelectedCategories] = useState<string[]>([]);
+  const [shopShowOffersOnly, setShopShowOffersOnly] = useState(false);
   const [couponCode, setCouponCode] = useState('');
   const [couponDiscount, setCouponDiscount] = useState(0);
   const [adminOrderFilter, setAdminOrderFilter] = useState('all');
@@ -510,6 +511,7 @@ export default function Home() {
       if (!shopSelectedCategories.includes(p.categoryId)) return false;
     }
     if (p.price < shopPriceRange[0] || p.price > shopPriceRange[1]) return false;
+    if (shopShowOffersOnly && !(p.showDiscount && p.comparePrice && p.comparePrice > p.price)) return false;
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       if (!p.name.includes(q) && !p.nameEn.toLowerCase().includes(q) && !p.description.includes(q)) return false;
@@ -521,6 +523,11 @@ export default function Home() {
     if (shopSort === 'price-low') return a.price - b.price;
     if (shopSort === 'price-high') return b.price - a.price;
     if (shopSort === 'bestseller') return b.totalSold - a.totalSold;
+    if (shopSort === 'discount') {
+      const discA = a.showDiscount ? calcDiscount(a.price, a.comparePrice) : 0;
+      const discB = b.showDiscount ? calcDiscount(b.price, b.comparePrice) : 0;
+      return discB - discA;
+    }
     return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
   });
 
@@ -1080,6 +1087,35 @@ export default function Home() {
           </section>
         )}
 
+        {/* Offers & Discounts Section */}
+        {products.filter(p => p.showDiscount && p.comparePrice && p.comparePrice > p.price && p.stock > 0).length > 0 && (
+          <section className="max-w-7xl mx-auto px-4 py-12">
+            <div className="flex items-center justify-between mb-8">
+              <div>
+                <h2 className="text-2xl sm:text-3xl font-bold text-red-600 flex items-center gap-2">
+                  <Zap className="text-red-500" size={24} /> عروض وخصومات
+                </h2>
+                <p className="text-muted-foreground text-sm mt-1">فرصة ذهبية - تخفيضات حصرية لا تفوت</p>
+              </div>
+              <Button variant="outline" onClick={() => { setShopSort('discount'); goToShop(); }} className="border-red-500 text-red-500 hover:bg-red-500 hover:text-white">
+                عرض كل العروض <ArrowLeft size={16} className="mr-1" />
+              </Button>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+              {products
+                .filter(p => p.showDiscount && p.comparePrice && p.comparePrice > p.price && p.stock > 0)
+                .sort((a, b) => {
+                  const discA = calcDiscount(a.price, a.comparePrice);
+                  const discB = calcDiscount(b.price, b.comparePrice);
+                  return discB - discA;
+                })
+                .slice(0, 8)
+                .map((p) => (<div key={p.id}>{ProductCard({ product: p })}</div>))
+              }
+            </div>
+          </section>
+        )}
+
         {/* Bundles / Packages - Circular Design */}
         {bundles.length > 0 && (
         <section className="max-w-7xl mx-auto px-4 py-10 bg-gradient-to-b from-cream to-white">
@@ -1201,7 +1237,7 @@ export default function Home() {
   /* ─── PRODUCT CARD ─── */
   const ProductCard = ({ product }: { product: ProductType }) => {
     const images = safeJsonParse(product.images);
-    const discount = calcDiscount(product.price, product.comparePrice);
+    const discount = product.showDiscount ? calcDiscount(product.price, product.comparePrice) : 0;
     const isWished = wishlist.includes(product.id);
 
     return (
@@ -1245,7 +1281,7 @@ export default function Home() {
           <h3 className="font-semibold text-sm mb-2 line-clamp-1">{product.name}</h3>
           <div className="flex items-center gap-2">
             <span className={`font-bold ${product.stock === 0 ? 'text-gray-400' : 'text-mareesh'}`}>{formatPriceCurrency(product.price)}</span>
-            {product.comparePrice && (
+            {product.showDiscount && product.comparePrice && (
               <span className="text-xs text-muted-foreground line-through">{formatPriceCurrency(product.comparePrice)}</span>
             )}
           </div>
@@ -1312,7 +1348,17 @@ export default function Home() {
                 </div>
               </div>
               <Separator />
-              <Button variant="outline" className="w-full text-sm" onClick={() => { setShopSelectedCategories([]); setShopPriceRange([0, 1000]); setSearchQuery(''); setShopPage(1); }}>
+              {/* Offers Only */}
+              <div>
+                <label className="flex items-center gap-2 cursor-pointer text-sm font-semibold text-red-600">
+                  <input type="checkbox" checked={shopShowOffersOnly}
+                    onChange={(e) => { setShopShowOffersOnly(e.target.checked); setShopPage(1); }}
+                    className="rounded border-red-400 text-red-500 focus:ring-red-500 accent-red-500" />
+                  <Zap size={14} className="text-red-500" /> عروض وخصومات فقط
+                </label>
+              </div>
+              <Separator />
+              <Button variant="outline" className="w-full text-sm" onClick={() => { setShopSelectedCategories([]); setShopPriceRange([0, 1000]); setSearchQuery(''); setShopShowOffersOnly(false); setShopPage(1); }}>
                 إعادة تعيين الفلاتر
               </Button>
             </CardContent>
@@ -1335,6 +1381,7 @@ export default function Home() {
                 <SelectItem value="price-low">السعر: الأقل</SelectItem>
                 <SelectItem value="price-high">السعر: الأعلى</SelectItem>
                 <SelectItem value="bestseller">الأكثر مبيعاً</SelectItem>
+                <SelectItem value="discount">الخصم الأكبر</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -1392,7 +1439,7 @@ export default function Home() {
     const images = safeJsonParse(currentProduct.images);
     const sizes: string[] = safeJsonParse(currentProduct.sizes);
     const colors: { name: string; hex: string }[] = safeJsonParse(currentProduct.colors, []);
-    const discount = calcDiscount(currentProduct.price, currentProduct.comparePrice);
+    const discount = currentProduct.showDiscount ? calcDiscount(currentProduct.price, currentProduct.comparePrice) : 0;
     const relatedProducts = products.filter(p => p.categoryId === currentProduct.categoryId && p.id !== currentProduct.id).slice(0, 4);
     const isWished = wishlist.includes(currentProduct.id);
 
@@ -1463,7 +1510,7 @@ export default function Home() {
             {/* Price */}
             <div className="flex items-center gap-3 mb-6">
               <span className="text-3xl font-bold text-mareesh">{formatPrice(currentProduct.price)}</span>
-              {currentProduct.comparePrice && (
+              {currentProduct.showDiscount && currentProduct.comparePrice && (
                 <>
                   <span className="text-lg text-muted-foreground line-through">{formatPrice(currentProduct.comparePrice)}</span>
                   <Badge className="bg-red-500 text-white">وفر {discount}%</Badge>
@@ -2197,7 +2244,7 @@ export default function Home() {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <h2 className="text-xl font-bold text-mareesh">المنتجات</h2>
-                <Button onClick={() => { setEditProduct({ name: '', nameEn: '', slug: '', description: '', price: 0, comparePrice: 0, sku: '', stock: 0, images: '[]', categoryId: categories[0]?.id || '', sizes: '[]', colors: '[]', isActive: true }); setShowProductModal(true); }}
+                <Button onClick={() => { setEditProduct({ name: '', nameEn: '', slug: '', description: '', price: 0, comparePrice: 0, sku: '', stock: 0, images: '[]', categoryId: categories[0]?.id || '', sizes: '[]', colors: '[]', isActive: true, showDiscount: false }); setShowProductModal(true); }}
                   className="bg-gold hover:bg-gold-light text-white">
                   <Plus size={16} className="ml-1" /> إضافة منتج
                 </Button>
@@ -2210,12 +2257,15 @@ export default function Home() {
                         <TableHead className="text-right">المنتج</TableHead>
                         <TableHead className="text-right hidden sm:table-cell">الفئة</TableHead>
                         <TableHead className="text-right">السعر</TableHead>
+                        <TableHead className="text-right hidden sm:table-cell">الخصم</TableHead>
                         <TableHead className="text-right hidden sm:table-cell">المخزون</TableHead>
                         <TableHead className="text-right">إجراءات</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {products.map((p) => (
+                      {products.map((p) => {
+                        const disc = p.showDiscount ? calcDiscount(p.price, p.comparePrice) : 0;
+                        return (
                         <TableRow key={p.id}>
                           <TableCell>
                             <div className="flex items-center gap-2">
@@ -2226,6 +2276,13 @@ export default function Home() {
                           <TableCell className="text-sm hidden sm:table-cell">{p.category?.name}</TableCell>
                           <TableCell className="text-sm font-medium">{formatPrice(p.price)}</TableCell>
                           <TableCell className="text-sm hidden sm:table-cell">
+                            {disc > 0 ? (
+                              <Badge className="bg-red-100 text-red-700 border border-red-200 text-xs">-{disc}%</Badge>
+                            ) : (
+                              <span className="text-xs text-muted-foreground">—</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-sm hidden sm:table-cell">
                             <Badge variant={p.stock > 10 ? 'secondary' : 'destructive'} className="text-xs">{p.stock}</Badge>
                           </TableCell>
                           <TableCell>
@@ -2235,7 +2292,8 @@ export default function Home() {
                             </div>
                           </TableCell>
                         </TableRow>
-                      ))}
+                        );
+                      })}
                     </TableBody>
                   </Table>
                 </CardContent>
@@ -2917,7 +2975,7 @@ export default function Home() {
               <div><Label>المقاسات (مثل: S,M,L,XL)</Label><Input value={editProduct?.sizes || '[]'} onChange={(e) => setEditProduct({ ...editProduct, sizes: e.target.value })} placeholder='["S","M","L","XL"]' /></div>
               <div><Label>الألوان (JSON)</Label><Input value={editProduct?.colors || '[]'} onChange={(e) => setEditProduct({ ...editProduct, colors: e.target.value })} placeholder='[{"name":"أحمر","hex":"#FF0000"}]' /></div>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-4 flex-wrap">
               <label className="flex items-center gap-2 cursor-pointer text-sm">
                 <input type="checkbox" checked={editProduct?.isFeatured || false} onChange={(e) => setEditProduct({ ...editProduct, isFeatured: e.target.checked })} /> مميز
               </label>
@@ -2927,7 +2985,17 @@ export default function Home() {
               <label className="flex items-center gap-2 cursor-pointer text-sm">
                 <input type="checkbox" checked={editProduct?.isBestseller || false} onChange={(e) => setEditProduct({ ...editProduct, isBestseller: e.target.checked })} /> الأكثر مبيعاً
               </label>
+              <label className="flex items-center gap-2 cursor-pointer text-sm bg-red-50 px-3 py-1.5 rounded-lg border border-red-200">
+                <input type="checkbox" checked={editProduct?.showDiscount || false} onChange={(e) => setEditProduct({ ...editProduct, showDiscount: e.target.checked })} className="accent-red-500" />
+                <Percent size={14} className="text-red-500" /> إظهار الخصم
+              </label>
             </div>
+            {editProduct?.showDiscount && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-center gap-2">
+                <Tag size={16} className="text-red-500" />
+                <span className="text-sm text-red-700">سيتم عرض شارة الخصم والسعر القديم على المنتج</span>
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowProductModal(false)}>إلغاء</Button>

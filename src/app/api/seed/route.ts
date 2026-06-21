@@ -64,7 +64,7 @@ export async function GET() {
           price: prod.price, comparePrice: prod.comparePrice, sku: prod.sku, stock: prod.stock,
           images: JSON.stringify([`https://placehold.co/600x800/E8D5C4/8B1A4A?text=${encodeURIComponent(prod.nameEn)}`, `https://placehold.co/600x800/F5E6D3/D4A853?text=${encodeURIComponent(prod.nameEn + ' 2')}`]),
           categoryId, sizes: prod.sizes, colors: prod.colors,
-          isFeatured: prod.isFeatured || false, isNew: prod.isNew || false, isBestseller: prod.isBestseller || false, isActive: true,
+          isFeatured: prod.isFeatured || false, isNew: prod.isNew || false, isBestseller: prod.isBestseller || false, showDiscount: prod.comparePrice ? prod.comparePrice > prod.price : false, isActive: true,
         }
       });
       productsCreated++;
