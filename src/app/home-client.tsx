@@ -733,7 +733,7 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 flex justify-between items-center">
           <span className="flex items-center gap-1"><Truck size={12} /> شحن مجاني للطلبات فوق {settings.free_shipping_threshold || '5000'} ر.ي</span>
           <div className="flex items-center gap-3">
-            <span className="hidden sm:inline flex items-center gap-1"><Phone size={12} /> {settings.store_phone || '+967776792012'}</span>
+            <a href="https://wa.me/967776792012" target="_blank" rel="noopener noreferrer" className="hidden sm:inline-flex items-center gap-1 hover:text-gold transition-colors"><MessageCircle size={12} /> +967776792012</a>
             <button
               onClick={() => setCurrency(currency === 'YER' ? 'USD' : 'YER')}
               className="px-2 py-0.5 bg-white/20 rounded text-xs font-bold hover:bg-white/30 transition-colors"
@@ -1479,6 +1479,9 @@ export default function Home() {
               <Button onClick={() => addToCart(currentProduct)} className="flex-1 bg-gold hover:bg-gold-light text-white font-bold h-13 text-base rounded-xl" size="lg">
                 <ShoppingCart size={20} className="ml-2" /> أضف للسلة
               </Button>
+              <Button onClick={() => { addToCart(currentProduct); setView('checkout'); }} className="flex-1 bg-mareesh hover:bg-mareesh-dark text-white font-bold h-13 text-base rounded-xl" size="lg">
+                <Zap size={20} className="ml-2" /> شراء الآن
+              </Button>
               <Button variant="outline" size="lg" className="h-13 w-13 rounded-xl border-mareesh"
                 onClick={() => setWishlist(prev => prev.includes(currentProduct.id) ? prev.filter(x => x !== currentProduct.id) : [...prev, currentProduct.id])}>
                 <Heart size={20} className={isWished ? 'fill-red-500 text-red-500' : ''} />
@@ -1994,7 +1997,13 @@ export default function Home() {
         <div className="space-y-6">
           <Card>
             <CardContent className="p-6 flex items-center gap-4">
-              <div className="w-12 h-12 bg-mareesh/10 rounded-xl flex items-center justify-center"><Phone className="text-mareesh" size={22} /></div>
+              <div className="w-12 h-12 bg-[#25D366]/10 rounded-xl flex items-center justify-center"><MessageCircle className="text-[#25D366]" size={22} /></div>
+              <a href="https://wa.me/967776792012" target="_blank" rel="noopener noreferrer" className="block"><h4 className="font-semibold hover:text-[#25D366] transition-colors">واتساب</h4><p className="text-sm text-muted-foreground">+967776792012</p></a>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-6 flex items-center gap-4">
+              <div className="w-12 h-12 bg-[#25D366]/10 rounded-xl flex items-center justify-center"><Phone className="text-[#25D366]" size={22} /></div>
               <div><h4 className="font-semibold">اتصل بنا</h4><p className="text-sm text-muted-foreground">{settings.store_phone || '+967776792012'}</p></div>
             </CardContent>
           </Card>
@@ -3011,7 +3020,7 @@ export default function Home() {
           <div>
             <h4 className="font-bold mb-4 text-gold">تواصل معنا</h4>
             <div className="space-y-3">
-              <div className="flex items-center gap-2 text-sm text-white/70"><Phone size={14} className="text-gold shrink-0" /> {settings.store_phone || '+967776792012'}</div>
+              <a href="https://wa.me/967776792012" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-white/70 hover:text-[#25D366] transition-colors"><MessageCircle size={14} className="text-gold shrink-0" /> +967776792012</a>
               <div className="flex items-center gap-2 text-sm text-white/70"><Mail size={14} className="text-gold shrink-0" /> {settings.store_email || 'info@mareesh.com'}</div>
               <div className="flex items-center gap-2 text-sm text-white/70"><MapPin size={14} className="text-gold shrink-0" /> اليمن</div>
             </div>
