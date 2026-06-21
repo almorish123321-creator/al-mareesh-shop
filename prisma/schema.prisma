@@ -211,3 +211,27 @@ model Slider {
   sortOrder Int      @default(0)
   createdAt DateTime @default(now())
 }
+
+model Bundle {
+  id          String         @id @default(cuid())
+  name        String
+  description String?
+  image       String?        // صورة خلفية الباقة
+  discount    Float          @default(0)
+  isActive    Boolean        @default(true)
+  sortOrder   Int            @default(0)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  items       BundleItem[]
+}
+
+model BundleItem {
+  id        String  @id @default(cuid())
+  bundleId  String
+  bundle    Bundle  @relation(fields: [bundleId], references: [id], onDelete: Cascade)
+  productId String?
+  name      String
+  price     Float
+  image     String?   // صورة خاصة للمنتج داخل الباقة
+  quantity  Int       @default(1)
+}

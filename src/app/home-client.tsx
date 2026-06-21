@@ -24,7 +24,7 @@ import {
   Shirt, Footprints, Zap, ArrowRight, Copy, Share2, MessageCircle, Send,
   Tag, Percent, Box, ClipboardList, LayoutDashboard, Archive, Receipt,
   CircleDot, UserCircle, CalendarDays, MapPinned, PhoneCall, Notebook,
-  Smartphone
+  Smartphone, Camera
 } from 'lucide-react';
 
 /* ─── TYPES ─── */
@@ -51,11 +51,13 @@ interface SliderType {
 
 interface BundleType {
   id: string; name: string; description?: string; image?: string;
-  discount: number; products: BundleProductType[];
+  discount: number; isActive?: boolean; sortOrder?: number;
+  items: BundleItemType[];
 }
 
-interface BundleProductType {
-  productId: string; name: string; price: number; image: string; quantity: number;
+interface BundleItemType {
+  id: string; bundleId: string; productId?: string; name: string;
+  price: number; image?: string; quantity: number;
 }
 
 interface CartItemType {
@@ -225,35 +227,13 @@ export default function Home() {
   };
 
   /* ─── BUNDLES ─── */
-  const [bundles] = useState<BundleType[]>([
-    {
-      id: 'b1', name: 'باقة الأناقة النسائية', description: 'طقم كامل بخصم خاص', discount: 15,
-      image: '',
-      products: [
-        { productId: '', name: 'عباية نسائية فاخرة', price: 8000, image: '', quantity: 1 },
-        { productId: '', name: 'حجاب قطني مميز', price: 1500, image: '', quantity: 2 },
-        { productId: '', name: 'حذاء نسائي أنيق', price: 5000, image: '', quantity: 1 },
-      ]
-    },
-    {
-      id: 'b2', name: 'باقة الطفل السعيد', description: 'كل ما يحتاجه طفلك بخصم مميز', discount: 10,
-      image: '',
-      products: [
-        { productId: '', name: 'بجامة أطفال قطنية', price: 2500, image: '', quantity: 2 },
-        { productId: '', name: 'حذاء أطفال مريح', price: 3000, image: '', quantity: 1 },
-        { productId: '', name: 'شنطة مدرسية', price: 4500, image: '', quantity: 1 },
-      ]
-    },
-    {
-      id: 'b3', name: 'باقة الرجل العصري', description: 'إطلالة كاملة بأسعار لا تُقاوم', discount: 12,
-      image: '',
-      products: [
-        { productId: '', name: 'قميص رجالي كلاسيك', price: 6000, image: '', quantity: 1 },
-        { productId: '', name: 'بنطلون رجالي', price: 7000, image: '', quantity: 1 },
-        { productId: '', name: 'حذاء رجالي جلد', price: 12000, image: '', quantity: 1 },
-      ]
-    },
-  ]);
+  const [bundles, setBundles] = useState<BundleType[]>([]);
+  const [selectedBundle, setSelectedBundle] = useState<BundleType | null>(null);
+  const [showBundleDetail, setShowBundleDetail] = useState(false);
+  const [editBundle, setEditBundle] = useState<any>(null);
+  const [showBundleModal, setShowBundleModal] = useState(false);
+  const [uploadingBundleImage, setUploadingBundleImage] = useState(false);
+  const [uploadingBundleItemImage, setUploadingBundleItemImage] = useState<string | null>(null);
 
   /* ─── REQUEST PRODUCT ─── */
   const [showRequestModal, setShowRequestModal] = useState(false);
@@ -283,28 +263,32 @@ export default function Home() {
       setLoading(true);
       try { await fetch('/api/seed'); } catch { /* seed can fail silently */ }
       
-      const [catRes, prodRes, sliderRes, settingsRes] = await Promise.all([
+      const [catRes, prodRes, sliderRes, settingsRes, bundleRes] = await Promise.all([
         fetch('/api/categories').catch(() => null),
         fetch('/api/products?limit=100').catch(() => null),
         fetch('/api/sliders').catch(() => null),
         fetch('/api/settings').catch(() => null),
+        fetch('/api/bundles').catch(() => null),
       ]);
       
       let catData: any = [];
       let prodData: any = { products: [] };
       let sliderData: any = [];
       let settingsData: any = {};
+      let bundleData: any = [];
       
       try { if (catRes?.ok) catData = await catRes.json(); } catch { /* ignore */ }
       try { if (prodRes?.ok) prodData = await prodRes.json(); } catch { /* ignore */ }
       try { if (sliderRes?.ok) sliderData = await sliderRes.json(); } catch { /* ignore */ }
       try { if (settingsRes?.ok) settingsData = await settingsRes.json(); } catch { /* ignore */ }
+      try { if (bundleRes?.ok) bundleData = await bundleRes.json(); } catch { /* ignore */ }
       
       setCategories(Array.isArray(catData) ? catData : []);
       setProducts(Array.isArray(prodData?.products) ? prodData.products : []);
       setSliders(Array.isArray(sliderData) ? sliderData : []);
       setSettings(settingsData && typeof settingsData === 'object' ? settingsData : {});
       setSettingsForm(settingsData && typeof settingsData === 'object' ? settingsData : {});
+      setBundles(Array.isArray(bundleData) ? bundleData : []);
     } catch (err) {
       console.error('Fetch error:', err);
     } finally {
@@ -626,6 +610,66 @@ export default function Home() {
         fetchAdminData();
       }
     } catch { showNotification('خطأ في تحديث الطلب', 'error'); }
+  };
+
+  /* ─── BUNDLE CRUD ─── */
+  const saveBundle = async () => {
+    if (!editBundle) return;
+    try {
+      const method = editBundle.id ? 'PUT' : 'POST';
+      const res = await fetch('/api/bundles', {
+        method, headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(editBundle),
+      });
+      if (res.ok) {
+        showNotification(editBundle.id ? 'تم تحديث الباقة' : 'تم إضافة الباقة', 'success');
+        setShowBundleModal(false);
+        setEditBundle(null);
+        seedAndFetch();
+      } else {
+        const data = await res.json();
+        showNotification(data.error || 'خطأ في حفظ الباقة', 'error');
+      }
+    } catch { showNotification('خطأ في حفظ الباقة', 'error'); }
+  };
+
+  const deleteBundle = async (id: string) => {
+    try {
+      const res = await fetch(`/api/bundles?id=${id}`, { method: 'DELETE' });
+      if (res.ok) { showNotification('تم حذف الباقة', 'success'); seedAndFetch(); }
+    } catch { showNotification('خطأ في حذف الباقة', 'error'); }
+  };
+
+  const handleBundleImageUpload = async (file: File) => {
+    if (!file) return;
+    setUploadingBundleImage(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await fetch('/api/upload', { method: 'POST', body: formData });
+      const data = await res.json();
+      if (data.error) { showNotification(data.error, 'error'); return; }
+      setEditBundle({ ...editBundle, image: data.url });
+      showNotification('تم رفع صورة الباقة', 'success');
+    } catch { showNotification('خطأ في رفع الصورة', 'error'); }
+    finally { setUploadingBundleImage(false); }
+  };
+
+  const handleBundleItemImageUpload = async (file: File, itemIndex: number) => {
+    if (!file) return;
+    setUploadingBundleItemImage(`item-${itemIndex}`);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await fetch('/api/upload', { method: 'POST', body: formData });
+      const data = await res.json();
+      if (data.error) { showNotification(data.error, 'error'); return; }
+      const newItems = [...(editBundle.items || [])];
+      newItems[itemIndex] = { ...newItems[itemIndex], image: data.url };
+      setEditBundle({ ...editBundle, items: newItems });
+      showNotification('تم رفع صورة المنتج', 'success');
+    } catch { showNotification('خطأ في رفع الصورة', 'error'); }
+    finally { setUploadingBundleItemImage(null); }
   };
 
   /* ─── ADMIN SETTINGS SAVE ─── */
@@ -1036,58 +1080,44 @@ export default function Home() {
           </section>
         )}
 
-        {/* Bundles / Packages */}
-        <section className="max-w-7xl mx-auto px-4 py-12 bg-gradient-to-b from-cream to-white">
-          <div className="text-center mb-8">
+        {/* Bundles / Packages - Circular Design */}
+        {bundles.length > 0 && (
+        <section className="max-w-7xl mx-auto px-4 py-10 bg-gradient-to-b from-cream to-white">
+          <div className="text-center mb-6">
             <h2 className="text-2xl sm:text-3xl font-bold text-mareesh flex items-center justify-center gap-2">
               <Gift className="text-gold" size={24} /> باقات هدايا مميزة
             </h2>
             <p className="text-muted-foreground text-sm mt-1">مجموعات خاصة بأسعار لا تُقاوم</p>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="flex flex-wrap justify-center gap-4 sm:gap-6">
             {bundles.map((bundle) => {
-              const originalTotal = bundle.products.reduce((s, p) => s + p.price * p.quantity, 0);
-              const bundlePrice = Math.round(originalTotal * (1 - bundle.discount / 100));
+              const originalTotal = (bundle.items || []).reduce((s, p) => s + p.price * p.quantity, 0);
               return (
-                <Card key={bundle.id} className="overflow-hidden border-2 border-gold/20 hover:border-gold/50 hover:shadow-xl transition-all group">
-                  <div className="bg-gradient-to-l from-mareesh to-mareesh-light p-4 text-white relative">
-                    <Badge className="absolute top-2 left-2 bg-red-500 text-white">-{bundle.discount}%</Badge>
-                    <h3 className="font-bold text-lg">{bundle.name}</h3>
-                    <p className="text-white/70 text-xs">{bundle.description}</p>
+                <button key={bundle.id}
+                  onClick={() => { setSelectedBundle(bundle); setShowBundleDetail(true); }}
+                  className="group flex flex-col items-center gap-2 transition-transform hover:scale-105">
+                  <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-full overflow-hidden border-2 border-gold/30 shadow-md group-hover:shadow-lg group-hover:border-gold transition-all">
+                    {bundle.image ? (
+                      <>
+                        <img src={bundle.image} alt={bundle.name} className="w-full h-full object-cover" />
+                        <div className="absolute inset-0 bg-mareesh-dark/20 group-hover:bg-mareesh-dark/0 transition-colors" />
+                      </>
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-gold to-gold-light flex items-center justify-center">
+                        <Gift size={24} className="text-white" />
+                      </div>
+                    )}
+                    {bundle.discount > 0 && (
+                      <Badge className="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] px-1 py-0 min-w-[24px]">-{bundle.discount}%</Badge>
+                    )}
                   </div>
-                  <CardContent className="p-4 space-y-3">
-                    {bundle.products.map((bp, i) => (
-                      <div key={i} className="flex items-center justify-between text-sm border-b border-dashed pb-2 last:border-0">
-                        <span className="text-muted-foreground">{bp.name} × {bp.quantity}</span>
-                        <span className="font-medium">{formatPriceCurrency(bp.price * bp.quantity)}</span>
-                      </div>
-                    ))}
-                    <Separator />
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <span className="text-xs text-muted-foreground line-through">{formatPriceCurrency(originalTotal)}</span>
-                        <span className="text-lg font-bold text-mareesh mr-2">{formatPriceCurrency(bundlePrice)}</span>
-                      </div>
-                      <Button size="sm" className="bg-gold hover:bg-gold-light text-white font-bold rounded-full"
-                        onClick={() => {
-                          bundle.products.forEach(bp => {
-                            setCart(prev => [...prev, {
-                              productId: bp.productId || 'bundle-' + bundle.id + '-' + i,
-                              name: bp.name, price: Math.round(bp.price * (1 - bundle.discount / 100)),
-                              image: bp.image || '', quantity: bp.quantity, stock: 99, maxStock: 99
-                            }]);
-                          });
-                          showNotification(`تمت إضافة باقة "${bundle.name}" للسلة`, 'success');
-                        }}>
-                        اشتري الآن
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
+                  <span className="text-xs sm:text-sm font-medium text-mareesh group-hover:text-gold transition-colors text-center leading-tight max-w-[80px] sm:max-w-[100px]">{bundle.name}</span>
+                </button>
               );
             })}
           </div>
         </section>
+        )}
 
         {/* Brands */}
         <section className="max-w-7xl mx-auto px-4 py-12">
@@ -2064,6 +2094,7 @@ export default function Home() {
       { id: 'dashboard', label: 'لوحة التحكم', icon: <LayoutDashboard size={18} /> },
       { id: 'products', label: 'المنتجات', icon: <Box size={18} /> },
       { id: 'categories', label: 'الفئات', icon: <Grid3X3 size={18} /> },
+      { id: 'bundles', label: 'باقات الهدايا', icon: <Gift size={18} /> },
       { id: 'orders', label: 'الطلبات', icon: <ClipboardList size={18} /> },
       { id: 'customers', label: 'العملاء', icon: <UserCircle size={18} /> },
       { id: 'coupons', label: 'الكوبونات', icon: <Tag size={18} /> },
@@ -2226,9 +2257,12 @@ export default function Home() {
                 {categories.map((cat) => (
                   <Card key={cat.id}>
                     <CardContent className="p-4 flex items-center justify-between">
-                      <div>
-                        <h4 className="font-medium">{cat.name}</h4>
-                        <p className="text-xs text-muted-foreground">{cat.nameEn} • {cat._count?.products || 0} منتج</p>
+                      <div className="flex items-center gap-3">
+                        {cat.image && <div className="w-10 h-10 rounded-full overflow-hidden"><img src={cat.image} alt={cat.name} className="w-full h-full object-cover" /></div>}
+                        <div>
+                          <h4 className="font-medium">{cat.name}</h4>
+                          <p className="text-xs text-muted-foreground">{cat.nameEn} • {cat._count?.products || 0} منتج</p>
+                        </div>
                       </div>
                       <div className="flex gap-1">
                         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setEditCategory(cat); setShowCategoryModal(true); }}><Edit size={14} /></Button>
@@ -2237,6 +2271,46 @@ export default function Home() {
                     </CardContent>
                   </Card>
                 ))}
+              </div>
+            </div>
+          )}
+
+          {/* Bundles */}
+          {adminTab === 'bundles' && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-bold text-mareesh">باقات الهدايا</h2>
+                <Button onClick={() => { setEditBundle({ name: '', description: '', discount: 0, sortOrder: 0, items: [], image: '' }); setShowBundleModal(true); }}
+                  className="bg-gold hover:bg-gold-light text-white">
+                  <Plus size={16} className="ml-1" /> إضافة باقة
+                </Button>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {bundles.map((bundle) => {
+                  const originalTotal = (bundle.items || []).reduce((s, p) => s + p.price * p.quantity, 0);
+                  const bundlePrice = Math.round(originalTotal * (1 - bundle.discount / 100));
+                  return (
+                    <Card key={bundle.id} className="overflow-hidden">
+                      {bundle.image && (
+                        <div className="h-32 overflow-hidden">
+                          <img src={bundle.image} alt={bundle.name} className="w-full h-full object-cover" />
+                        </div>
+                      )}
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between mb-2">
+                          <h4 className="font-bold">{bundle.name}</h4>
+                          {bundle.discount > 0 && <Badge className="bg-red-500 text-white text-xs">-{bundle.discount}%</Badge>}
+                        </div>
+                        <p className="text-xs text-muted-foreground mb-2">{bundle.description}</p>
+                        <p className="text-xs text-muted-foreground">{(bundle.items || []).length} منتج • {formatPriceCurrency(bundlePrice)}</p>
+                        <div className="flex gap-1 mt-2">
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setEditBundle(bundle); setShowBundleModal(true); }}><Edit size={14} /></Button>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500" onClick={() => deleteBundle(bundle.id)}><Trash2 size={14} /></Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
               </div>
             </div>
           )}
@@ -2864,6 +2938,162 @@ export default function Home() {
     );
   };
 
+  /* ─── BUNDLE DETAIL MODAL ─── */
+  const BundleDetailModal = () => {
+    if (!selectedBundle) return null;
+    const originalTotal = (selectedBundle.items || []).reduce((s, p) => s + p.price * p.quantity, 0);
+    const bundlePrice = Math.round(originalTotal * (1 - selectedBundle.discount / 100));
+    return (
+      <Dialog open={showBundleDetail} onOpenChange={setShowBundleDetail}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Gift className="text-gold" size={20} /> {selectedBundle.name}
+            </DialogTitle>
+            <DialogDescription>{selectedBundle.description}</DialogDescription>
+          </DialogHeader>
+          {/* Bundle cover image */}
+          {selectedBundle.image && (
+            <div className="relative w-full h-40 rounded-xl overflow-hidden">
+              <img src={selectedBundle.image} alt={selectedBundle.name} className="w-full h-full object-cover" />
+              {selectedBundle.discount > 0 && (
+                <Badge className="absolute top-2 left-2 bg-red-500 text-white text-sm px-2 py-0.5">خصم {selectedBundle.discount}%</Badge>
+              )}
+            </div>
+          )}
+          {/* Products list */}
+          <div className="space-y-3 max-h-60 overflow-y-auto">
+            {(selectedBundle.items || []).map((item, i) => (
+              <div key={i} className="flex items-center gap-3 p-2 bg-gray-50 rounded-lg">
+                <div className="w-12 h-12 rounded-lg overflow-hidden bg-gray-200 shrink-0">
+                  {item.image ? (
+                    <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center"><Package size={18} className="text-gray-400" /></div>
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-sm truncate">{item.name}</p>
+                  <p className="text-xs text-muted-foreground">الكمية: {item.quantity}</p>
+                </div>
+                <span className="font-bold text-sm text-mareesh whitespace-nowrap">{formatPriceCurrency(item.price * item.quantity)}</span>
+              </div>
+            ))}
+          </div>
+          <Separator />
+          {/* Pricing */}
+          <div className="flex items-center justify-between">
+            <div>
+              <span className="text-xs text-muted-foreground line-through">{formatPriceCurrency(originalTotal)}</span>
+              <span className="text-xl font-bold text-mareesh mr-2">{formatPriceCurrency(bundlePrice)}</span>
+              {selectedBundle.discount > 0 && (
+                <Badge className="bg-red-100 text-red-700 text-xs mr-1">وفّر {formatPriceCurrency(originalTotal - bundlePrice)}</Badge>
+              )}
+            </div>
+            <Button className="bg-gold hover:bg-gold-light text-white font-bold rounded-xl"
+              onClick={() => {
+                (selectedBundle.items || []).forEach(item => {
+                  setCart(prev => [...prev, {
+                    productId: item.productId || 'bundle-' + selectedBundle.id + '-' + item.id,
+                    name: item.name, price: Math.round(item.price * (1 - selectedBundle.discount / 100)),
+                    image: item.image || '', quantity: item.quantity, stock: 99, maxStock: 99
+                  }]);
+                });
+                showNotification(`تمت إضافة باقة "${selectedBundle.name}" للسلة`, 'success');
+                setShowBundleDetail(false);
+              }}>
+              <ShoppingCart size={16} className="ml-1" /> أضف للسلة
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  };
+
+  /* ─── ADMIN BUNDLE MODAL ─── */
+  const BundleModal = () => (
+    <Dialog open={showBundleModal} onOpenChange={setShowBundleModal}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>{editBundle?.id ? 'تعديل باقة' : 'إضافة باقة'}</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div><Label>اسم الباقة</Label><Input value={editBundle?.name || ''} onChange={(e) => setEditBundle({ ...editBundle, name: e.target.value })} /></div>
+          <div><Label>الوصف</Label><Textarea value={editBundle?.description || ''} onChange={(e) => setEditBundle({ ...editBundle, description: e.target.value })} /></div>
+          <div><Label>نسبة الخصم (%)</Label><Input type="number" value={editBundle?.discount || 0} onChange={(e) => setEditBundle({ ...editBundle, discount: Number(e.target.value) })} /></div>
+          <div><Label>الترتيب</Label><Input type="number" value={editBundle?.sortOrder || 0} onChange={(e) => setEditBundle({ ...editBundle, sortOrder: Number(e.target.value) })} /></div>
+          {/* صورة خلفية الباقة */}
+          <div>
+            <Label>صورة خلفية الباقة</Label>
+            <div className="mt-2 flex items-center gap-4">
+              {editBundle?.image ? (
+                <div className="relative w-24 h-24 rounded-xl overflow-hidden border-2 border-gold/30">
+                  <img src={editBundle.image} alt="صورة الباقة" className="w-full h-full object-cover" />
+                  <button onClick={() => setEditBundle({ ...editBundle, image: '' })} className="absolute top-0 right-0 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-600"><X size={10} /></button>
+                </div>
+              ) : (
+                <label className={`w-24 h-24 border-2 border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center cursor-pointer hover:border-gold/50 transition-colors ${uploadingBundleImage ? 'opacity-50' : ''}`}>
+                  <Plus size={20} className="text-gray-400" />
+                  <span className="text-[10px] text-gray-400 mt-0.5">رفع صورة</span>
+                  <input type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && handleBundleImageUpload(e.target.files[0])} disabled={uploadingBundleImage} />
+                </label>
+              )}
+              {uploadingBundleImage && <span className="text-xs text-mareesh animate-pulse">جاري الرفع...</span>}
+            </div>
+          </div>
+          {/* منتجات الباقة */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <Label>منتجات الباقة</Label>
+              <Button size="sm" variant="outline" className="text-xs h-7"
+                onClick={() => setEditBundle({ ...editBundle, items: [...(editBundle?.items || []), { name: '', price: 0, quantity: 1, image: '' }] })}>
+                <Plus size={12} className="ml-1" /> إضافة منتج
+              </Button>
+            </div>
+            <div className="space-y-3">
+              {(editBundle?.items || []).map((item: any, i: number) => (
+                <div key={i} className="p-3 border rounded-lg bg-gray-50 space-y-2">
+                  <div className="flex items-center gap-3">
+                    {/* صورة المنتج */}
+                    <div className="relative w-14 h-14 rounded-lg overflow-hidden bg-white border shrink-0">
+                      {item.image ? (
+                        <>
+                          <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                          <button onClick={() => { const newItems = [...editBundle.items]; newItems[i] = { ...newItems[i], image: '' }; setEditBundle({ ...editBundle, items: newItems }); }} className="absolute top-0 right-0 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center"><X size={8} /></button>
+                        </>
+                      ) : (
+                        <label className={`w-full h-full flex flex-col items-center justify-center cursor-pointer hover:bg-gray-100 ${uploadingBundleItemImage === `item-${i}` ? 'opacity-50' : ''}`}>
+                          <Camera size={14} className="text-gray-400" />
+                          <input type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && handleBundleItemImageUpload(e.target.files[0], i)} disabled={uploadingBundleItemImage === `item-${i}`} />
+                        </label>
+                      )}
+                    </div>
+                    <div className="flex-1 grid grid-cols-2 gap-2">
+                      <Input placeholder="اسم المنتج" value={item.name || ''} onChange={(e) => { const newItems = [...editBundle.items]; newItems[i] = { ...newItems[i], name: e.target.value }; setEditBundle({ ...editBundle, items: newItems }); }} className="h-8 text-sm" />
+                      <div className="flex gap-1">
+                        <Input type="number" placeholder="السعر" value={item.price || 0} onChange={(e) => { const newItems = [...editBundle.items]; newItems[i] = { ...newItems[i], price: Number(e.target.value) }; setEditBundle({ ...editBundle, items: newItems }); }} className="h-8 text-sm" />
+                        <Input type="number" placeholder="الكمية" value={item.quantity || 1} onChange={(e) => { const newItems = [...editBundle.items]; newItems[i] = { ...newItems[i], quantity: Number(e.target.value) }; setEditBundle({ ...editBundle, items: newItems }); }} className="h-8 text-sm w-16" />
+                      </div>
+                    </div>
+                    <Button size="icon" variant="ghost" className="h-8 w-8 text-red-500 hover:bg-red-50 shrink-0"
+                      onClick={() => { const newItems = editBundle.items.filter((_: any, idx: number) => idx !== i); setEditBundle({ ...editBundle, items: newItems }); }}>
+                      <Trash2 size={14} />
+                    </Button>
+                  </div>
+                  {uploadingBundleItemImage === `item-${i}` && <span className="text-xs text-mareesh animate-pulse">جاري رفع الصورة...</span>}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setShowBundleModal(false)}>إلغاء</Button>
+          <Button onClick={saveBundle} className="bg-mareesh">حفظ</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+
   /* ─── ADMIN CATEGORY MODAL ─── */
   const CategoryModal = () => (
     <Dialog open={showCategoryModal} onOpenChange={setShowCategoryModal}>
@@ -3098,6 +3328,8 @@ export default function Home() {
       {ProductModal()}
       {CategoryModal()}
       {CouponModal()}
+      {BundleDetailModal()}
+      {BundleModal()}
 
       {Header()}
 
