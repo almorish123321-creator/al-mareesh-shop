@@ -6,6 +6,17 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status');
     const userId = searchParams.get('userId');
+    const orderNumber = searchParams.get('number');
+
+    // Track order by order number
+    if (orderNumber) {
+      const order = await db.order.findFirst({
+        where: { orderNumber },
+        include: { items: true },
+      });
+      if (!order) return Response.json({ error: 'لم يتم العثور على الطلب' }, { status: 404 });
+      return Response.json(order);
+    }
 
     const where: any = {};
     if (status) where.status = status;

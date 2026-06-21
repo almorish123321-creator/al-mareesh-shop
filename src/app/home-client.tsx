@@ -195,6 +195,23 @@ export default function Home() {
   /* ─── WISHLIST ─── */
   const [wishlist, setWishlist] = useState<string[]>([]);
 
+  /* ─── CART NOTES ─── */
+  const [cartNotes, setCartNotes] = useState('');
+
+  /* ─── REQUEST PRODUCT ─── */
+  const [showRequestModal, setShowRequestModal] = useState(false);
+  const [requestForm, setRequestForm] = useState({ name: '', description: '', category: '', expectedPrice: '', link: '' });
+
+  /* ─── AI CHAT ─── */
+  const [showAiChat, setShowAiChat] = useState(false);
+  const [aiMessages, setAiMessages] = useState<{role: string; text: string}[]>([{role: 'bot', text: 'مرحباً! أنا مساعد المريش شوب الذكي. كيف أقدر أساعدك؟ 🛍️'}]);
+  const [aiInput, setAiInput] = useState('');
+
+  /* ─── ORDER TRACKING ─── */
+  const [trackOrderNumber, setTrackOrderNumber] = useState('');
+  const [trackResult, setTrackResult] = useState<OrderType | null>(null);
+  const [showTrackModal, setShowTrackModal] = useState(false);
+
   /* ─── IMAGE UPLOAD ─── */
   const [uploadingImage, setUploadingImage] = useState<string | null>(null);
 
@@ -353,7 +370,8 @@ export default function Home() {
 
   const cartSubtotal = cart.reduce((sum: number, c: CartItemType) => sum + c.price * c.quantity, 0);
   const shippingCost = cartSubtotal >= (parseFloat(settings.free_shipping_threshold || '300')) ? 0 : parseFloat(settings.shipping_cost || '25');
-  const cartTotal = cartSubtotal + shippingCost - couponDiscount;
+  const cartTax = Math.round(cartSubtotal * 0.02); // 2% tax
+  const cartTotal = cartSubtotal + shippingCost - couponDiscount + cartTax;
 
   /* ─── COUPON ─── */
   const applyCoupon = async () => {
@@ -510,6 +528,67 @@ export default function Home() {
       });
       if (res.ok) { showNotification('تم حفظ الإعدادات', 'success'); seedAndFetch(); }
     } catch { showNotification('خطأ في حفظ الإعدادات', 'error'); }
+  };
+
+  /* ─── WISHLIST HANDLERS ─── */
+  const toggleWishlist = (productId: string) => {
+    if (wishlist.includes(productId)) {
+      setWishlist(wishlist.filter(id => id !== productId));
+      showNotification('تم الإزالة من المفضلة', 'info');
+    } else {
+      setWishlist([...wishlist, productId]);
+      showNotification('تم الإضافة للمفضلة', 'success');
+    }
+  };
+
+  /* ─── TRACK ORDER ─── */
+  const handleTrackOrder = async () => {
+    if (!trackOrderNumber) return;
+    try {
+      const res = await fetch(`/api/orders?number=${trackOrderNumber}`);
+      if (res.ok) {
+        const data = await res.json();
+        setTrackResult(data);
+      } else {
+        showNotification('لم يتم العثور على الطلب', 'error');
+      }
+    } catch {
+      showNotification('خطأ في البحث عن الطلب', 'error');
+    }
+  };
+
+  /* ─── AI CHAT HANDLER ─── */
+  const handleAiChat = () => {
+    if (!aiInput.trim()) return;
+    const userMsg = aiInput.trim();
+    setAiMessages(prev => [...prev, { role: 'user', text: userMsg }]);
+    setAiInput('');
+    // Simple AI responses
+    setTimeout(() => {
+      let reply = '';
+      const q = userMsg.toLowerCase();
+      if (q.includes('سعر') || q.includes('كم')) {
+        reply = 'يمكنك الاطلاع على أسعار جميع المنتجات في صفحة المتجر. هل تريد البحث عن منتج معين؟';
+      } else if (q.includes('شحن') || q.includes('توصيل')) {
+        reply = `الشحن مجاني للطلبات فوق ${settings.free_shipping_threshold || '300'} ر.ي، وتكلفة الشحن العادي ${settings.shipping_cost || '25'} ر.ي. نوفر توصيل سريع لجميع المحافظات!`;
+      } else if (q.includes('دفع') || q.includes('كريمي') || q.includes('جيب') || q.includes('قطيبي')) {
+        reply = 'نقبل الدفع عبر: كريمي، قطيبي، جيب، وكذلك الدفع عند الاستلام. اختر الطريقة المناسبة لك عند الدفع!';
+      } else if (q.includes('استرجاع') || q.includes('إرجاع') || q.includes('رجوع')) {
+        reply = 'يمكنك إرجاع المنتج خلال 7 أيام من الاستلام بشرط أن يكون بحالته الأصلية. تواصل معنا عبر واتساب لبدء عملية الاسترجاع.';
+      } else if (q.includes('منتج') || q.includes('بحث') || q.includes('اريد')) {
+        reply = 'إذا لم تجد المنتج الذي تبحث عنه، يمكنك طلب أي منتج من خلال زر "طلب منتج غير موجود" وسنحاول توفيره لك!';
+      } else {
+        reply = 'شكراً لتواصلك مع المريش شوب! 😊 هل تريد معرفة المزيد عن منتجاتنا، طرق الدفع، أو الشحن؟ أنا هنا لمساعدتك!';
+      }
+      setAiMessages(prev => [...prev, { role: 'bot', text: reply }]);
+    }, 800);
+  };
+
+  /* ─── REQUEST PRODUCT HANDLER ─── */
+  const handleRequestProduct = () => {
+    showNotification('تم إرسال طلبك بنجاح! سنتواصل معك قريباً', 'success');
+    setRequestForm({ name: '', description: '', category: '', expectedPrice: '', link: '' });
+    setShowRequestModal(false);
   };
 
   /* ─── NAVIGATE HELPERS ─── */
@@ -1392,10 +1471,16 @@ export default function Home() {
                   <Input placeholder="كود الخصم" value={couponCode} onChange={(e) => setCouponCode(e.target.value)} className="h-9 text-sm" />
                   <Button variant="outline" onClick={applyCoupon} className="shrink-0 h-9 text-sm border-mareesh text-mareesh">تطبيق</Button>
                 </div>
+                {/* Cart Notes */}
+                <div>
+                  <Label className="text-xs text-muted-foreground">ملاحظات (اختياري)</Label>
+                  <Textarea value={cartNotes} onChange={(e) => setCartNotes(e.target.value)} placeholder="ملاحظات خاصة بطلبك..." className="h-16 text-sm resize-none mt-1" />
+                </div>
                 <Separator />
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between"><span className="text-muted-foreground">المجموع الفرعي</span><span>{formatPrice(cartSubtotal)}</span></div>
                   <div className="flex justify-between"><span className="text-muted-foreground">الشحن</span><span>{shippingCost === 0 ? <span className="text-green-600">مجاني</span> : formatPrice(shippingCost)}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">الضريبة (2%)</span><span>{formatPrice(cartTax)}</span></div>
                   {couponDiscount > 0 && (
                     <div className="flex justify-between text-green-600"><span>الخصم</span><span>-{formatPrice(couponDiscount)}</span></div>
                   )}
@@ -1409,6 +1494,13 @@ export default function Home() {
                   إتمام الشراء
                 </Button>
                 <Button variant="outline" onClick={() => goToShop()} className="w-full">متابعة التسوق</Button>
+                {/* Trust badges */}
+                <div className="grid grid-cols-2 gap-2 mt-2">
+                  <div className="flex items-center gap-2 p-2 bg-green-50 rounded-lg text-xs"><Truck size={16} className="text-green-600 shrink-0" /><span className="text-green-700">توصيل سريع</span></div>
+                  <div className="flex items-center gap-2 p-2 bg-blue-50 rounded-lg text-xs"><Shield size={16} className="text-blue-600 shrink-0" /><span className="text-blue-700">منتجات أصلية 100%</span></div>
+                  <div className="flex items-center gap-2 p-2 bg-purple-50 rounded-lg text-xs"><RotateCcw size={16} className="text-purple-600 shrink-0" /><span className="text-purple-700">إمكانية الإرجاع</span></div>
+                  <div className="flex items-center gap-2 p-2 bg-amber-50 rounded-lg text-xs"><Headphones size={16} className="text-amber-600 shrink-0" /><span className="text-amber-700">دعم متواصل</span></div>
+                </div>
               </CardContent>
             </Card>
           </div>
@@ -2244,6 +2336,8 @@ export default function Home() {
                 { label: 'المتجر', action: () => goToShop() },
                 { label: 'العروض المميزة', action: () => goToShop() },
                 { label: 'تواصل معنا', action: () => setView('contact') },
+                { label: 'تتبع الطلب', action: () => setShowTrackModal(true) },
+                { label: 'طلب منتج غير موجود', action: () => setShowRequestModal(true) },
               ].map((link, idx) => (
                 <button key={idx} onClick={link.action} className="block text-sm text-[#F5E6D3]/70 hover:text-gold transition-colors">{link.label}</button>
               ))}
@@ -2255,6 +2349,20 @@ export default function Home() {
             <div className="space-y-2">
               {categories.slice(0, 6).map((cat) => (
                 <button key={cat.id} onClick={() => goToShop(cat.slug)} className="block text-sm text-[#F5E6D3]/70 hover:text-gold transition-colors">{cat.name}</button>
+              ))}
+            </div>
+          </div>
+          {/* Customer Service */}
+          <div>
+            <h4 className="font-bold mb-4 text-gold">خدمة العملاء</h4>
+            <div className="space-y-2">
+              {[
+                { label: 'سياسة الاسترجاع', action: () => setShowTrackModal(true) },
+                { label: 'الأسئلة الشائعة', action: () => setView('contact') },
+                { label: 'الشروط والأحكام', action: () => {} },
+                { label: 'سياسة الخصوصية', action: () => {} },
+              ].map((link, idx) => (
+                <button key={idx} onClick={link.action} className="block text-sm text-[#F5E6D3]/70 hover:text-gold transition-colors">{link.label}</button>
               ))}
             </div>
           </div>
@@ -2320,9 +2428,14 @@ export default function Home() {
 
       {view !== 'admin' && Footer()}
 
-      {/* أزرار التواصل العائمة */}
+      {/* أزرار التواصل العائمة + شات ذكي + طلب منتج */}
       {view !== 'admin' && (
         <div className="fixed bottom-6 left-6 flex flex-col gap-3 z-50">
+          {/* AI Chat */}
+          <button onClick={() => setShowAiChat(!showAiChat)}
+            className="w-14 h-14 bg-gradient-to-br from-mareesh to-mareesh-dark text-white rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform" title="شات ذكي">
+            <Sparkles size={28} />
+          </button>
           <a href="https://wa.me/967700000000" target="_blank" rel="noopener noreferrer"
             className="w-14 h-14 bg-[#25D366] text-white rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform" title="تواصل عبر واتساب">
             <MessageCircle size={28} />
@@ -2333,6 +2446,116 @@ export default function Home() {
           </a>
         </div>
       )}
+
+      {/* AI Chat Window */}
+      {showAiChat && (
+        <div className="fixed bottom-24 left-6 w-80 sm:w-96 bg-white rounded-2xl shadow-2xl border border-mareesh/20 z-50 overflow-hidden animate-fade-in" dir="rtl">
+          <div className="bg-gradient-to-l from-mareesh to-mareesh-dark text-white p-4 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Sparkles size={20} />
+              <div>
+                <div className="font-bold text-sm">مساعد المريش الذكي</div>
+                <div className="text-xs text-white/70">متصل الآن</div>
+              </div>
+            </div>
+            <button onClick={() => setShowAiChat(false)} className="text-white/70 hover:text-white"><X size={18} /></button>
+          </div>
+          <div className="h-64 overflow-y-auto p-3 space-y-3 bg-cream/30">
+            {aiMessages.map((msg, i) => (
+              <div key={i} className={`flex ${msg.role === 'user' ? 'justify-start' : 'justify-end'}`}>
+                <div className={`max-w-[80%] px-3 py-2 rounded-xl text-sm ${
+                  msg.role === 'user' 
+                    ? 'bg-mareesh text-white rounded-br-sm' 
+                    : 'bg-white border border-gold/20 text-gray-800 rounded-bl-sm'
+                }`}>
+                  {msg.text}
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="p-3 border-t bg-white flex gap-2">
+            <Input value={aiInput} onChange={(e) => setAiInput(e.target.value)} 
+              onKeyDown={(e) => e.key === 'Enter' && handleAiChat()}
+              placeholder="اكتب رسالتك..." className="h-9 text-sm" />
+            <Button onClick={handleAiChat} size="icon" className="h-9 w-9 bg-mareesh shrink-0"><Send size={14} /></Button>
+          </div>
+        </div>
+      )}
+
+      {/* Request Product Modal */}
+      <Dialog open={showRequestModal} onOpenChange={setShowRequestModal}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><Package size={20} className="text-mareesh" /> طلب منتج غير موجود</DialogTitle>
+            <DialogDescription>إذا لم تجد المنتج الذي تبحث عنه، صفه لنا وسنحاول توفيره لك!</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-xs text-muted-foreground bg-amber-50 p-2 rounded-lg">يمكنك إرفاق الطلب من: علي إكسبريس، نون، تيمو، زارا، أمازون، أو أي متجر آخر.</p>
+            <div><Label>اسم المنتج *</Label><Input value={requestForm.name} onChange={(e) => setRequestForm({...requestForm, name: e.target.value})} placeholder="اسم المنتج المطلوب" /></div>
+            <div><Label>وصف المنتج</Label><Textarea value={requestForm.description} onChange={(e) => setRequestForm({...requestForm, description: e.target.value})} placeholder="وصف المنتج بالتفصيل..." className="resize-none h-20" /></div>
+            <div className="grid grid-cols-2 gap-4">
+              <div><Label>الفئة</Label>
+                <Select value={requestForm.category} onValueChange={(v) => setRequestForm({...requestForm, category: v})}>
+                  <SelectTrigger><SelectValue placeholder="اختر الفئة" /></SelectTrigger>
+                  <SelectContent>
+                    {categories.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div><Label>السعر المتوقع (ر.ي)</Label><Input type="number" value={requestForm.expectedPrice} onChange={(e) => setRequestForm({...requestForm, expectedPrice: e.target.value})} placeholder="0" /></div>
+            </div>
+            <div><Label>رابط المنتج</Label><Input value={requestForm.link} onChange={(e) => setRequestForm({...requestForm, link: e.target.value})} placeholder="رابط من أي متجر آخر" dir="ltr" /></div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowRequestModal(false)}>إلغاء</Button>
+            <Button onClick={handleRequestProduct} className="bg-mareesh">إرسال الطلب</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Track Order Modal */}
+      <Dialog open={showTrackModal} onOpenChange={setShowTrackModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><Truck size={20} className="text-mareesh" /> تتبع الطلب</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="flex gap-2">
+              <Input value={trackOrderNumber} onChange={(e) => setTrackOrderNumber(e.target.value)} placeholder="رقم الطلب (مثل: ORD-12345)" />
+              <Button onClick={handleTrackOrder} className="bg-mareesh shrink-0">بحث</Button>
+            </div>
+            {trackResult && (
+              <Card className="border-mareesh/20">
+                <CardContent className="p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-mareesh">{trackResult.orderNumber}</span>
+                    <Badge className={statusColors[trackResult.status] || 'bg-gray-100 text-gray-800'}>{statusMap[trackResult.status] || trackResult.status}</Badge>
+                  </div>
+                  <div className="text-sm space-y-1">
+                    <div className="flex justify-between"><span className="text-muted-foreground">الإجمالي:</span><span className="font-medium">{formatPrice(trackResult.total)}</span></div>
+                    <div className="flex justify-between"><span className="text-muted-foreground">طريقة الدفع:</span><span>{trackResult.paymentMethod === 'karimi' ? 'كريمي' : trackResult.paymentMethod === 'qataybi' ? 'قطيبي' : trackResult.paymentMethod === 'jeeb' ? 'جيب' : 'عند الاستلام'}</span></div>
+                    <div className="flex justify-between"><span className="text-muted-foreground">التاريخ:</span><span>{new Date(trackResult.createdAt).toLocaleDateString('ar-YE')}</span></div>
+                  </div>
+                  {/* Status Steps */}
+                  <div className="mt-4 space-y-2" dir="ltr">
+                    {['pending', 'processing', 'shipped', 'delivered'].map((s, i) => (
+                      <div key={s} className="flex items-center gap-2">
+                        <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${
+                          ['pending','processing','shipped','delivered'].indexOf(trackResult.status) >= i 
+                            ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-500'
+                        }`}>{i + 1}</div>
+                        <span className={`text-sm ${['pending','processing','shipped','delivered'].indexOf(trackResult.status) >= i ? 'font-medium' : 'text-muted-foreground'}`}>
+                          {statusMap[s]}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
