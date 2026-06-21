@@ -140,7 +140,7 @@ function StarRating({ rating, size = 16, onChange }: { rating: number; size?: nu
 // تم نقله داخل المكون الرئيسي لتجنب خطأ React #310
 
 /* ─── MAIN APP ─── */
-export default function Home() {
+export default function Home({ autoAdmin }: { autoAdmin?: boolean } = {}) {
   const store = useAppStore();
   const {
     view, setView, selectedProductId, setSelectedProduct, selectedCategory,
@@ -258,7 +258,7 @@ export default function Home() {
   /* ─── DATA FETCHING ─── */
   const fetchProducts = useCallback(async () => {
     try {
-      const res = await fetch('/api/products?limit=200');
+      const res = await fetch('/api/products?limit=9999');
       if (res.ok) {
         const data = await res.json();
         setProducts(Array.isArray(data?.products) ? data.products : []);
@@ -273,7 +273,7 @@ export default function Home() {
       
       const [catRes, prodRes, sliderRes, settingsRes, bundleRes] = await Promise.all([
         fetch('/api/categories').catch(() => null),
-        fetch('/api/products?limit=100').catch(() => null),
+        fetch('/api/products?limit=9999').catch(() => null),
         fetch('/api/sliders').catch(() => null),
         fetch('/api/settings').catch(() => null),
         fetch('/api/bundles').catch(() => null),
@@ -327,6 +327,20 @@ export default function Home() {
   }, [user, products, adminRefreshKey]);
 
   useEffect(() => { fetchAdminData(); }, [fetchAdminData]);
+
+  /* ─── AUTO ADMIN MODE ─── */
+  useEffect(() => {
+    if (autoAdmin) {
+      if (user?.role === 'admin') {
+        setView('admin');
+        setAdminTab('dashboard');
+      } else if (user === null) {
+        // Not logged in - show login modal
+        setShowAuthModal(true);
+        setAuthMode('login');
+      }
+    }
+  }, [autoAdmin, user, setView, setAdminTab, setShowAuthModal, setAuthMode]);
 
   /* ─── SCROLL HEADER ─── */
   useEffect(() => {

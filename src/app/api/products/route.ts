@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
     const isNew = searchParams.get('new');
     const hasDiscount = searchParams.get('discount');
     const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '20');
+    const limit = parseInt(searchParams.get('limit') || '9999');
 
     const where: any = { isActive: true };
     if (category) {
