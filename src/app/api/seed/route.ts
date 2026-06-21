@@ -42,47 +42,69 @@ export async function GET() {
       await db.user.update({ where: { email: 'admin@mareesh.com' }, data: { role: 'admin' } });
     }
 
+    // Create categories if missing
     const existingCategories = await db.category.count();
-    if (existingCategories > 0) {
-      return Response.json({ message: 'قاعدة البيانات مليئة بالفعل', categories: existingCategories });
-    }
-
     const categoryMap: Record<string, string> = {};
-    for (const cat of categories) {
-      const created = await db.category.create({
-        data: { name: cat.name, nameEn: cat.nameEn, slug: cat.slug, description: cat.description, icon: cat.icon, sortOrder: cat.sortOrder, isActive: true }
-      });
-      categoryMap[cat.slug] = created.id;
+
+    if (existingCategories === 0) {
+      for (const cat of categories) {
+        const created = await db.category.create({
+          data: { name: cat.name, nameEn: cat.nameEn, slug: cat.slug, description: cat.description, icon: cat.icon, sortOrder: cat.sortOrder, isActive: true }
+        });
+        categoryMap[cat.slug] = created.id;
+      }
+    } else {
+      // Build map from existing categories
+      const existingCats = await db.category.findMany();
+      for (const c of existingCats) {
+        categoryMap[c.slug] = c.id;
+      }
     }
 
+    // Create products only if none exist
+    const existingProducts = await db.product.count();
     let productsCreated = 0;
-    for (const prod of products) {
-      const categoryId = categoryMap[prod.categorySlug] || categoryMap['kids-clothing'];
-      await db.product.create({
-        data: {
-          name: prod.name, nameEn: prod.nameEn, slug: prod.slug, description: prod.description,
-          price: prod.price, comparePrice: prod.comparePrice, sku: prod.sku, stock: prod.stock,
-          images: JSON.stringify([`https://placehold.co/600x800/E8D5C4/8B1A4A?text=${encodeURIComponent(prod.nameEn)}`, `https://placehold.co/600x800/F5E6D3/D4A853?text=${encodeURIComponent(prod.nameEn + ' 2')}`]),
-          categoryId, sizes: prod.sizes, colors: prod.colors,
-          isFeatured: prod.isFeatured || false, isNew: prod.isNew || false, isBestseller: prod.isBestseller || false, showDiscount: prod.comparePrice ? prod.comparePrice > prod.price : false, isActive: true,
-        }
-      });
-      productsCreated++;
+
+    if (existingProducts === 0) {
+      for (const prod of products) {
+        const categoryId = categoryMap[prod.categorySlug] || categoryMap['kids-clothing'];
+        if (!categoryId) continue; // Skip if category not found
+        await db.product.create({
+          data: {
+            name: prod.name, nameEn: prod.nameEn, slug: prod.slug, description: prod.description,
+            price: prod.price, comparePrice: prod.comparePrice, sku: prod.sku, stock: prod.stock,
+            images: JSON.stringify([`https://placehold.co/600x800/E8D5C4/8B1A4A?text=${encodeURIComponent(prod.nameEn)}`, `https://placehold.co/600x800/F5E6D3/D4A853?text=${encodeURIComponent(prod.nameEn + ' 2')}`]),
+            categoryId, sizes: prod.sizes, colors: prod.colors,
+            isFeatured: prod.isFeatured || false, isNew: prod.isNew || false, isBestseller: prod.isBestseller || false, showDiscount: prod.comparePrice ? prod.comparePrice > prod.price : false, isActive: true,
+          }
+        });
+        productsCreated++;
+      }
     }
 
-    await db.user.create({ data: { email: 'admin@mareesh.com', name: 'مدير المريش شوب', password: Buffer.from('admin123').toString('base64'), role: 'admin', isActive: true } });
-    await db.coupon.createMany({ data: [{ code: 'WELCOME10', type: 'percentage', value: 10, minOrder: 100, isActive: true }, { code: 'MAREESH50', type: 'fixed', value: 50, minOrder: 200, isActive: true }] });
-    await db.slider.createMany({ data: [
-      { title: 'تشكيلة ملابس الأطفال', titleEn: 'Kids Collection', subtitle: 'خصم يصل إلى 40% على جميع ملابس الأطفال', image: 'https://placehold.co/1400x500/8B1A4A/FFFFFF?text=Kids+Collection', sortOrder: 1, isActive: true },
-      { title: 'عبايات فاخرة', titleEn: 'Luxury Abayas', subtitle: 'اكتشفي أحدث تشكيلات العبايات المطرزة', image: 'https://placehold.co/1400x500/D4A853/000000?text=Luxury+Abayas', sortOrder: 2, isActive: true },
-      { title: 'أحذية عصرية', titleEn: 'Trendy Shoes', subtitle: 'أحذية رياضية وكاجوال بأسعار مميزة', image: 'https://placehold.co/1400x500/2E8B57/FFFFFF?text=Trendy+Shoes', sortOrder: 3, isActive: true },
-    ] });
-    await db.setting.createMany({ data: [
-      { key: 'store_name', value: 'المريش شوب' }, { key: 'store_name_en', value: 'Al-Mareesh Shop' },
-      { key: 'store_email', value: 'info@mareesh.com' }, { key: 'store_phone', value: '+967776792012' },
-      { key: 'store_currency', value: 'SAR' }, { key: 'store_language', value: 'ar' },
-      { key: 'shipping_cost', value: '500' }, { key: 'free_shipping_threshold', value: '5000' },
-    ] });
+    // Create default data only if missing
+    const existingCoupons = await db.coupon.count();
+    if (existingCoupons === 0) {
+      await db.coupon.createMany({ data: [{ code: 'WELCOME10', type: 'percentage', value: 10, minOrder: 100, isActive: true }, { code: 'MAREESH50', type: 'fixed', value: 50, minOrder: 200, isActive: true }] }).catch(() => {});
+    }
+    const existingSliders = await db.slider.count();
+    if (existingSliders === 0) {
+      await db.slider.createMany({ data: [
+        { title: 'تشكيلة ملابس الأطفال', titleEn: 'Kids Collection', subtitle: 'خصم يصل إلى 40% على جميع ملابس الأطفال', image: 'https://placehold.co/1400x500/8B1A4A/FFFFFF?text=Kids+Collection', sortOrder: 1, isActive: true },
+        { title: 'عبايات فاخرة', titleEn: 'Luxury Abayas', subtitle: 'اكتشفي أحدث تشكيلات العبايات المطرزة', image: 'https://placehold.co/1400x500/D4A853/000000?text=Luxury+Abayas', sortOrder: 2, isActive: true },
+        { title: 'أحذية عصرية', titleEn: 'Trendy Shoes', subtitle: 'أحذية رياضية وكاجوال بأسعار مميزة', image: 'https://placehold.co/1400x500/2E8B57/FFFFFF?text=Trendy+Shoes', sortOrder: 3, isActive: true },
+      ] }).catch(() => {});
+    }
+    const existingSettings = await db.setting.count();
+    if (existingSettings === 0) {
+      await db.setting.createMany({ data: [
+        { key: 'store_name', value: 'المريش شوب' }, { key: 'store_name_en', value: 'Al-Mareesh Shop' },
+        { key: 'store_email', value: 'info@mareesh.com' }, { key: 'store_phone', value: '+967776792012' },
+        { key: 'store_currency', value: 'SAR' }, { key: 'store_language', value: 'ar' },
+        { key: 'shipping_cost', value: '500' }, { key: 'free_shipping_threshold', value: '5000' },
+        { key: 'yer_rate', value: '267' },
+      ] }).catch(() => {});
+    }
 
     return Response.json({ message: 'تم تعبئة قاعدة البيانات بنجاح', categories: categories.length, products: productsCreated });
   } catch (error: any) {
