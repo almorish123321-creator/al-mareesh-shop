@@ -259,6 +259,16 @@ export default function Home() {
   const [uploadingImage, setUploadingImage] = useState<string | null>(null);
 
   /* ─── DATA FETCHING ─── */
+  const fetchProducts = useCallback(async () => {
+    try {
+      const res = await fetch('/api/products?limit=200');
+      if (res.ok) {
+        const data = await res.json();
+        setProducts(Array.isArray(data?.products) ? data.products : []);
+      }
+    } catch { /* ignore */ }
+  }, []);
+
   const seedAndFetch = useCallback(async () => {
     try {
       setLoading(true);
@@ -557,13 +567,26 @@ export default function Home() {
       .substring(0, 80);
   };
 
+  const generateUniqueId = () => {
+    // Strong unique ID: timestamp + random string
+    const ts = Date.now().toString(36);
+    const rand = Math.random().toString(36).substring(2, 8);
+    return `${ts}-${rand}`;
+  };
+
   const saveProduct = async () => {
     if (!editProduct) return;
     try {
-      // Auto-generate slug if empty
+      // Auto-generate slug if empty - always generate unique for new products
       const productData = { ...editProduct };
-      if (!productData.slug && productData.name) {
-        productData.slug = generateSlug(productData.name) + '-' + Date.now().toString(36);
+      if (!productData.id) {
+        // New product - always generate unique slug and SKU
+        productData.slug = productData.name ? generateSlug(productData.name) + '-' + generateUniqueId() : 'product-' + generateUniqueId();
+        productData.sku = 'SKU-' + generateUniqueId();
+      } else {
+        // Editing existing product - only generate if missing
+        if (!productData.slug) productData.slug = 'product-' + generateUniqueId();
+        if (!productData.sku) productData.sku = 'SKU-' + generateUniqueId();
       }
       // Auto-fill nameEn if empty
       if (!productData.nameEn && productData.name) {
@@ -574,12 +597,17 @@ export default function Home() {
         productData.comparePrice = undefined;
       }
       // Validate required fields
-      if (!productData.name || !productData.price || !productData.categoryId) {
-        showNotification('يرجى ملء الحقول المطلوبة: الاسم، السعر، الفئة', 'error');
+      if (!productData.name) {
+        showNotification('يرجى إدخال اسم المنتج', 'error');
         return;
       }
-      if (!productData.sku) {
-        productData.sku = 'SKU-' + Date.now().toString(36);
+      if (!productData.price || productData.price <= 0) {
+        showNotification('يرجى إدخال سعر صحيح', 'error');
+        return;
+      }
+      if (!productData.categoryId) {
+        showNotification('يرجى اختيار الفئة', 'error');
+        return;
       }
 
       const method = productData.id ? 'PUT' : 'POST';
@@ -588,10 +616,10 @@ export default function Home() {
         body: JSON.stringify(productData),
       });
       if (res.ok) {
-        showNotification(productData.id ? 'تم تحديث المنتج' : 'تم إضافة المنتج', 'success');
+        showNotification(productData.id ? 'تم تحديث المنتج بنجاح ✅' : 'تم إضافة المنتج بنجاح ✅', 'success');
         setShowProductModal(false);
         setEditProduct(null);
-        seedAndFetch();
+        fetchProducts(); // Only refresh products, don't re-seed
       } else {
         const errorData = await res.json().catch(() => ({}));
         console.error('Product save error:', errorData);
@@ -606,7 +634,7 @@ export default function Home() {
   const deleteProduct = async (id: string) => {
     try {
       const res = await fetch(`/api/products?id=${id}`, { method: 'DELETE' });
-      if (res.ok) { showNotification('تم حذف المنتج', 'success'); seedAndFetch(); }
+      if (res.ok) { showNotification('تم حذف المنتج', 'success'); fetchProducts(); }
     } catch { showNotification('خطأ في حذف المنتج', 'error'); }
   };
 
@@ -623,7 +651,10 @@ export default function Home() {
         showNotification(editCategory.id ? 'تم تحديث الفئة' : 'تم إضافة الفئة', 'success');
         setShowCategoryModal(false);
         setEditCategory(null);
-        seedAndFetch();
+        seedAndFetch(); // Categories affect product display, need full refresh
+      } else {
+        const errorData = await res.json().catch(() => ({}));
+        showNotification(errorData.error || 'خطأ في حفظ الفئة', 'error');
       }
     } catch { showNotification('خطأ في حفظ الفئة', 'error'); }
   };
@@ -679,7 +710,7 @@ export default function Home() {
         showNotification(editBundle.id ? 'تم تحديث الباقة' : 'تم إضافة الباقة', 'success');
         setShowBundleModal(false);
         setEditBundle(null);
-        seedAndFetch();
+        fetchProducts(); // Refresh products (bundles reference products)
       } else {
         const data = await res.json();
         showNotification(data.error || 'خطأ في حفظ الباقة', 'error');
@@ -690,7 +721,7 @@ export default function Home() {
   const deleteBundle = async (id: string) => {
     try {
       const res = await fetch(`/api/bundles?id=${id}`, { method: 'DELETE' });
-      if (res.ok) { showNotification('تم حذف الباقة', 'success'); seedAndFetch(); }
+      if (res.ok) { showNotification('تم حذف الباقة', 'success'); fetchProducts(); }
     } catch { showNotification('خطأ في حذف الباقة', 'error'); }
   };
 
@@ -733,7 +764,7 @@ export default function Home() {
         method: 'PUT', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(settingsForm),
       });
-      if (res.ok) { showNotification('تم حفظ الإعدادات', 'success'); seedAndFetch(); }
+      if (res.ok) { showNotification('تم حفظ الإعدادات', 'success'); fetchProducts(); }
     } catch { showNotification('خطأ في حفظ الإعدادات', 'error'); }
   };
 

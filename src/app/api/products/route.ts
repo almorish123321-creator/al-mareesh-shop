@@ -54,10 +54,10 @@ export async function POST(request: NextRequest) {
     const data = await request.json();
     const { _count, createdAt, updatedAt, category, ...rawData } = data;
 
-    // Clean up data - remove undefined/empty optional fields
+    // Clean up data
     const createData: any = { ...rawData, isActive: rawData.isActive ?? true };
 
-    // Ensure required string fields have values
+    // Validate required fields
     if (!createData.name || !createData.name.trim()) {
       return Response.json({ error: 'اسم المنتج مطلوب' }, { status: 400 });
     }
@@ -65,32 +65,55 @@ export async function POST(request: NextRequest) {
       return Response.json({ error: 'الفئة مطلوبة' }, { status: 400 });
     }
 
-    // Auto-generate slug if missing
+    // Auto-generate slug if missing - with retry on collision
+    const generateSlug = (base: string) => {
+      const clean = base.toLowerCase().replace(/[^a-z0-9\u0600-\u06FF]/g, '-').replace(/-+/g, '-').substring(0, 60);
+      return `${clean}-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 6)}`;
+    };
+    const generateSKU = () => `SKU-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 6)}`;
+
     if (!createData.slug) {
-      const baseSlug = createData.nameEn || createData.name;
-      createData.slug = baseSlug.toLowerCase().replace(/[^a-z0-9\u0600-\u06FF]/g, '-').replace(/-+/g, '-').substring(0, 60) + '-' + Date.now().toString(36);
+      createData.slug = generateSlug(createData.nameEn || createData.name);
     }
-    // Auto-generate SKU if missing
     if (!createData.sku) {
-      createData.sku = 'SKU-' + Date.now().toString(36);
+      createData.sku = generateSKU();
     }
-    // Auto-fill nameEn
     if (!createData.nameEn) {
       createData.nameEn = createData.name;
+    }
+    if (!createData.description) {
+      createData.description = createData.name;
     }
     // Clean comparePrice
     if (!createData.comparePrice || createData.comparePrice === 0) {
       createData.comparePrice = null;
     }
-    // Ensure price is a number
     createData.price = Number(createData.price) || 0;
 
-    const product = await db.product.create({ data: createData });
+    // Try creating with retry on unique constraint violation
+    let product;
+    let attempts = 0;
+    while (attempts < 3) {
+      try {
+        product = await db.product.create({ data: createData });
+        break;
+      } catch (err: any) {
+        if (err.code === 'P2002' && attempts < 2) {
+          // Unique constraint violation - regenerate slug and SKU
+          createData.slug = generateSlug(createData.nameEn || createData.name);
+          createData.sku = generateSKU();
+          attempts++;
+        } else {
+          throw err;
+        }
+      }
+    }
+
     return Response.json(product);
   } catch (error: any) {
     console.error('Product POST error:', error);
     if (error.code === 'P2002') {
-      return Response.json({ error: 'رمز SKU أو الرابط مستخدم بالفعل - استخدم رمز مختلف' }, { status: 400 });
+      return Response.json({ error: 'رمز SKU أو الرابط مستخدم بالفعل - حاول مرة أخرى' }, { status: 400 });
     }
     return Response.json({ error: 'خطأ في إنشاء المنتج: ' + (error.message || '') }, { status: 500 });
   }
