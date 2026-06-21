@@ -17,7 +17,8 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const data = await request.json();
-    const category = await db.category.create({ data });
+    const { _count, createdAt, updatedAt, ...createData } = data;
+    const category = await db.category.create({ data: { ...createData, isActive: createData.isActive ?? true } });
     return Response.json(category);
   } catch (error) {
     console.error('Category POST error:', error);
@@ -28,7 +29,8 @@ export async function POST(request: Request) {
 export async function PUT(request: Request) {
   try {
     const data = await request.json();
-    const { id, ...updateData } = data;
+    const { id, _count, createdAt, updatedAt, ...updateData } = data;
+    if (!id) return Response.json({ error: 'معرف الفئة مطلوب' }, { status: 400 });
     const category = await db.category.update({ where: { id }, data: updateData });
     return Response.json(category);
   } catch (error) {

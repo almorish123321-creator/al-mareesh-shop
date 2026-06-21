@@ -50,7 +50,8 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const data = await request.json();
-    const product = await db.product.create({ data });
+    const { _count, createdAt, updatedAt, category, ...createData } = data;
+    const product = await db.product.create({ data: { ...createData, isActive: createData.isActive ?? true } });
     return Response.json(product);
   } catch (error) {
     console.error('Product POST error:', error);
@@ -61,7 +62,8 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const data = await request.json();
-    const { id, ...updateData } = data;
+    const { id, _count, createdAt, updatedAt, category, ...updateData } = data;
+    if (!id) return Response.json({ error: 'معرف المنتج مطلوب' }, { status: 400 });
     const product = await db.product.update({ where: { id }, data: updateData });
     return Response.json(product);
   } catch (error) {
