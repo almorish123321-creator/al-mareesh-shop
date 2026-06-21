@@ -99,8 +99,8 @@ const formatPrice = (price: number) => {
   return price.toLocaleString('ar-SA') + ' ر.س';
 };
 
-// سعر الصرف: 1 ر.س ≈ 267 ر.ي
-const YER_RATE = 267;
+// سعر الصرف الافتراضي: 1 ر.س ≈ 267 ر.ي (يُحدّث من الإعدادات)
+const DEFAULT_YER_RATE = 267;
 
 const calcDiscount = (price: number, compare?: number) => {
   if (!compare || compare <= price) return 0;
@@ -224,9 +224,10 @@ export default function Home({ autoAdmin }: { autoAdmin?: boolean } = {}) {
 
   /* ─── CURRENCY ─── */
   const [currency, setCurrency] = useState<'SAR' | 'YER'>('SAR');
+  const yerRate = Number(settings.yer_rate) || DEFAULT_YER_RATE;
   const formatPriceCurrency = (price: number) => {
     if (currency === 'YER') {
-      return Math.round(price * YER_RATE).toLocaleString('ar-SA') + ' ر.ي';
+      return Math.round(price * yerRate).toLocaleString('ar-SA') + ' ر.ي';
     }
     return price.toLocaleString('ar-SA') + ' ر.س';
   };
@@ -2915,6 +2916,22 @@ export default function Home({ autoAdmin }: { autoAdmin?: boolean } = {}) {
                     <div><Label>تكلفة الشحن</Label><Input type="number" value={settingsForm.shipping_cost || ''} onChange={(e) => setSettingsForm({ ...settingsForm, shipping_cost: e.target.value })} /></div>
                     <div><Label>حد الشحن المجاني</Label><Input type="number" value={settingsForm.free_shipping_threshold || ''} onChange={(e) => setSettingsForm({ ...settingsForm, free_shipping_threshold: e.target.value })} /></div>
                   </div>
+                  {/* سعر الصرف */}
+                  <Card className="border-gold/30 bg-gold/5">
+                    <CardHeader className="pb-2 pt-4 px-4"><CardTitle className="text-base flex items-center gap-2">💰 سعر الصرف</CardTitle></CardHeader>
+                    <CardContent className="px-4 pb-4 pt-0">
+                      <div className="flex items-end gap-3">
+                        <div className="flex-1">
+                          <Label>قيمة الريال اليمني مقابل السعودي</Label>
+                          <Input type="number" value={settingsForm.yer_rate || ''} onChange={(e) => setSettingsForm({ ...settingsForm, yer_rate: e.target.value })} placeholder="267" />
+                          <p className="text-xs text-muted-foreground mt-1">كم ريال يمني يساوي 1 ريال سعودي (الافتراضي: 267)</p>
+                        </div>
+                        <div className="text-sm text-muted-foreground pb-2 whitespace-nowrap">
+                          مثال: 100 ر.س = {(100 * (Number(settingsForm.yer_rate) || 267)).toLocaleString('ar-SA')} ر.ي
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
                   <Button onClick={saveSettings} className="bg-mareesh hover:bg-mareesh-dark">حفظ الإعدادات</Button>
                 </CardContent>
               </Card>
