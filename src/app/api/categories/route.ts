@@ -18,11 +18,48 @@ export async function POST(request: Request) {
   try {
     const data = await request.json();
     const { _count, createdAt, updatedAt, ...createData } = data;
-    const category = await db.category.create({ data: { ...createData, isActive: createData.isActive ?? true } });
+
+    // Auto-generate nameEn if missing
+    if (!createData.nameEn || !createData.nameEn.trim()) {
+      createData.nameEn = createData.name || 'Category';
+    }
+
+    // Auto-generate slug if missing - with retry on collision
+    const generateSlug = (base: string) => {
+      const clean = base.toLowerCase().replace(/[^a-z0-9\u0600-\u06FF]/g, '-').replace(/-+/g, '-').substring(0, 50);
+      return `${clean}-${Date.now().toString(36)}`;
+    };
+
+    if (!createData.slug || !createData.slug.trim()) {
+      createData.slug = generateSlug(createData.nameEn || createData.name);
+    }
+
+    createData.isActive = createData.isActive ?? true;
+
+    // Try creating with retry on unique constraint violation
+    let category;
+    let attempts = 0;
+    while (attempts < 3) {
+      try {
+        category = await db.category.create({ data: createData });
+        break;
+      } catch (err: any) {
+        if (err.code === 'P2002' && attempts < 2) {
+          createData.slug = generateSlug(createData.nameEn || createData.name);
+          attempts++;
+        } else {
+          throw err;
+        }
+      }
+    }
+
     return Response.json(category);
-  } catch (error) {
+  } catch (error: any) {
     console.error('Category POST error:', error);
-    return Response.json({ error: 'خطأ في إنشاء الفئة' }, { status: 500 });
+    if (error.code === 'P2002') {
+      return Response.json({ error: 'الرابط (Slug) مستخدم بالفعل - حاول مرة أخرى' }, { status: 400 });
+    }
+    return Response.json({ error: 'خطأ في إنشاء الفئة: ' + (error.message || '') }, { status: 500 });
   }
 }
 

@@ -220,10 +220,7 @@ export default function Home() {
   const [cartNotes, setCartNotes] = useState('');
 
   /* ─── CURRENCY ─── */
-  const [currency, setCurrency] = useState<'SAR' | 'USD'>('SAR');
-  const usdRate = 3.75; // 1 USD = 3.75 SAR
   const formatPriceCurrency = (price: number) => {
-    if (currency === 'USD') return '$' + (price / usdRate).toFixed(2);
     return price.toLocaleString('ar-SA') + ' ر.س';
   };
 
@@ -641,11 +638,21 @@ export default function Home() {
   /* ─── ADMIN CATEGORY CRUD ─── */
   const saveCategory = async () => {
     if (!editCategory) return;
+    if (!editCategory.name || !editCategory.name.trim()) {
+      showNotification('اسم الفئة بالعربي مطلوب', 'error');
+      return;
+    }
     try {
+      // Remove slug to let API auto-generate it if empty
+      const dataToSave = { ...editCategory };
+      if (!dataToSave.slug || !dataToSave.slug.trim()) {
+        delete (dataToSave as any).slug;
+      }
+
       const method = editCategory.id ? 'PUT' : 'POST';
       const res = await fetch('/api/categories', {
         method, headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(editCategory),
+        body: JSON.stringify(dataToSave),
       });
       if (res.ok) {
         showNotification(editCategory.id ? 'تم تحديث الفئة' : 'تم إضافة الفئة', 'success');
@@ -880,12 +887,7 @@ export default function Home() {
           <span className="flex items-center gap-1"><Truck size={12} /> شحن مجاني للطلبات فوق {settings.free_shipping_threshold || '5000'} ر.س</span>
           <div className="flex items-center gap-3">
             <a href="https://wa.me/967776792012" target="_blank" rel="noopener noreferrer" className="hidden sm:inline-flex items-center gap-1 hover:text-gold transition-colors"><MessageCircle size={12} /> +967776792012</a>
-            <button
-              onClick={() => setCurrency(currency === 'SAR' ? 'USD' : 'SAR')}
-              className="px-2 py-0.5 bg-white/20 rounded text-xs font-bold hover:bg-white/30 transition-colors"
-            >
-              {currency === 'SAR' ? 'ر.س' : 'USD'}
-            </button>
+            <span className="px-2 py-0.5 bg-white/20 rounded text-xs font-bold">ر.س</span>
           </div>
         </div>
       </div>
@@ -3395,12 +3397,9 @@ export default function Home() {
           <DialogTitle>{editCategory?.id ? 'تعديل فئة' : 'إضافة فئة'}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div><Label>الاسم بالعربي</Label><Input value={editCategory?.name || ''} onChange={(e) => setEditCategory({ ...editCategory, name: e.target.value })} /></div>
-            <div><Label>الاسم بالإنجليزي</Label><Input value={editCategory?.nameEn || ''} onChange={(e) => setEditCategory({ ...editCategory, nameEn: e.target.value })} /></div>
-          </div>
-          <div><Label>الرابط (Slug)</Label><Input value={editCategory?.slug || ''} onChange={(e) => setEditCategory({ ...editCategory, slug: e.target.value })} /></div>
-          <div><Label>الوصف</Label><Textarea value={editCategory?.description || ''} onChange={(e) => setEditCategory({ ...editCategory, description: e.target.value })} /></div>
+          <div><Label>اسم الفئة بالعربي *</Label><Input value={editCategory?.name || ''} onChange={(e) => setEditCategory({ ...editCategory, name: e.target.value })} placeholder="مثال: فساتين" /></div>
+          <div><Label>اسم الفئة بالإنجليزي (اختياري - يُولّد تلقائياً)</Label><Input value={editCategory?.nameEn || ''} onChange={(e) => setEditCategory({ ...editCategory, nameEn: e.target.value })} placeholder="مثال: Dresses" /></div>
+          <div><Label>الوصف</Label><Textarea value={editCategory?.description || ''} onChange={(e) => setEditCategory({ ...editCategory, description: e.target.value })} placeholder="وصف مختصر للفئة (اختياري)" /></div>
           {/* صورة القسم */}
           <div>
             <Label>صورة القسم (خلفية الدائرة)</Label>
