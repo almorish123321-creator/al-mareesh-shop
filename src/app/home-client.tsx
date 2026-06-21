@@ -96,7 +96,7 @@ const safeJsonParse = (str: string | null | undefined, fallback: any = []) => {
 };
 
 const formatPrice = (price: number) => {
-  return price.toLocaleString('ar-YE') + ' ر.ي';
+  return price.toLocaleString('ar-SA') + ' ر.س';
 };
 
 const calcDiscount = (price: number, compare?: number) => {
@@ -220,11 +220,11 @@ export default function Home() {
   const [cartNotes, setCartNotes] = useState('');
 
   /* ─── CURRENCY ─── */
-  const [currency, setCurrency] = useState<'YER' | 'USD'>('YER');
-  const usdRate = 530; // 1 USD = 530 YER
+  const [currency, setCurrency] = useState<'SAR' | 'USD'>('SAR');
+  const usdRate = 3.75; // 1 USD = 3.75 SAR
   const formatPriceCurrency = (price: number) => {
     if (currency === 'USD') return '$' + (price / usdRate).toFixed(2);
-    return price.toLocaleString('ar-YE') + ' ر.ي';
+    return price.toLocaleString('ar-SA') + ' ر.س';
   };
 
   /* ─── BUNDLES ─── */
@@ -730,7 +730,7 @@ export default function Home() {
       if (q.includes('سعر') || q.includes('كم')) {
         reply = 'يمكنك الاطلاع على أسعار جميع المنتجات في صفحة المتجر. هل تريد البحث عن منتج معين؟';
       } else if (q.includes('شحن') || q.includes('توصيل')) {
-        reply = `الشحن مجاني للطلبات فوق ${settings.free_shipping_threshold || '300'} ر.ي، وتكلفة الشحن العادي ${settings.shipping_cost || '25'} ر.ي. نوفر توصيل سريع لجميع المحافظات!`;
+        reply = `الشحن مجاني للطلبات فوق ${settings.free_shipping_threshold || '300'} ر.س، وتكلفة الشحن العادي ${settings.shipping_cost || '25'} ر.س. نوفر توصيل سريع لجميع المحافظات!`;
       } else if (q.includes('دفع') || q.includes('كريمي') || q.includes('جيب') || q.includes('قطيبي')) {
         reply = 'نقبل الدفع عبر: كريمي، قطيبي، جيب، وكذلك الدفع عند الاستلام. اختر الطريقة المناسبة لك عند الدفع!';
       } else if (q.includes('استرجاع') || q.includes('إرجاع') || q.includes('رجوع')) {
@@ -799,14 +799,14 @@ export default function Home() {
       {/* Top bar */}
       <div className="bg-mareesh-dark text-white text-xs py-1.5">
         <div className="max-w-7xl mx-auto px-4 flex justify-between items-center">
-          <span className="flex items-center gap-1"><Truck size={12} /> شحن مجاني للطلبات فوق {settings.free_shipping_threshold || '5000'} ر.ي</span>
+          <span className="flex items-center gap-1"><Truck size={12} /> شحن مجاني للطلبات فوق {settings.free_shipping_threshold || '5000'} ر.س</span>
           <div className="flex items-center gap-3">
             <a href="https://wa.me/967776792012" target="_blank" rel="noopener noreferrer" className="hidden sm:inline-flex items-center gap-1 hover:text-gold transition-colors"><MessageCircle size={12} /> +967776792012</a>
             <button
-              onClick={() => setCurrency(currency === 'YER' ? 'USD' : 'YER')}
+              onClick={() => setCurrency(currency === 'SAR' ? 'USD' : 'SAR')}
               className="px-2 py-0.5 bg-white/20 rounded text-xs font-bold hover:bg-white/30 transition-colors"
             >
-              {currency === 'YER' ? 'ر.ي' : 'USD'}
+              {currency === 'SAR' ? 'ر.س' : 'USD'}
             </button>
           </div>
         </div>
@@ -2479,7 +2479,7 @@ export default function Home() {
                         </div>
                         <div className="space-y-2 text-sm">
                           <div className="flex items-center justify-between"><span className="text-muted-foreground">حالة الدفع:</span><Badge variant={o.paymentStatus === 'paid' ? 'default' : 'secondary'} className={o.paymentStatus === 'paid' ? 'bg-emerald-100 text-emerald-800' : ''}>{o.paymentStatus === 'paid' ? 'مدفوع' : o.paymentStatus === 'refunded' ? 'مسترجع' : 'غير مدفوع'}</Badge></div>
-                          <div className="flex items-center justify-between"><span className="text-muted-foreground">تاريخ الطلب:</span><span className="font-medium flex items-center gap-1"><CalendarDays size={14} /> {new Date(o.createdAt).toLocaleDateString('ar-YE', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span></div>
+                          <div className="flex items-center justify-between"><span className="text-muted-foreground">تاريخ الطلب:</span><span className="font-medium flex items-center gap-1"><CalendarDays size={14} /> {new Date(o.createdAt).toLocaleDateString('ar-SA', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span></div>
                         </div>
                       </CardContent>
                     </Card>
@@ -2597,7 +2597,7 @@ export default function Home() {
                             </div>
                             <div>
                               <span className="font-mono font-bold text-mareesh">{order.orderNumber}</span>
-                              <p className="text-xs text-muted-foreground flex items-center gap-1"><CalendarDays size={10} /> {new Date(order.createdAt).toLocaleDateString('ar-YE', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
+                              <p className="text-xs text-muted-foreground flex items-center gap-1"><CalendarDays size={10} /> {new Date(order.createdAt).toLocaleDateString('ar-SA', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
                             </div>
                           </div>
                           <Badge className={statusColors[order.status] || ''}>{statusMap[order.status] || order.status}</Badge>
@@ -2683,8 +2683,8 @@ export default function Home() {
                               <TableCell className="text-sm font-mono" dir="ltr">{customer.phone || '-'}</TableCell>
                               <TableCell className="text-sm">{customer.city || '-'}</TableCell>
                               <TableCell className="text-sm font-bold text-mareesh">{customer.orderCount || 0}</TableCell>
-                              <TableCell className="text-sm font-bold">{customer.totalSpent ? formatPrice(customer.totalSpent) : '0 ر.ي'}</TableCell>
-                              <TableCell className="text-xs text-muted-foreground">{new Date(customer.createdAt).toLocaleDateString('ar-YE')}</TableCell>
+                              <TableCell className="text-sm font-bold">{customer.totalSpent ? formatPrice(customer.totalSpent) : '0 ر.س'}</TableCell>
+                              <TableCell className="text-xs text-muted-foreground">{new Date(customer.createdAt).toLocaleDateString('ar-SA')}</TableCell>
                               <TableCell>
                                 {customer.phone && (
                                   <a href={`https://wa.me/${customer.phone.replace(/[^0-9]/g, '')}`} target="_blank" rel="noopener noreferrer"
@@ -2704,7 +2704,7 @@ export default function Home() {
                           <div className="flex justify-between"><span className="font-medium">{customer.name}</span><span className="text-xs text-muted-foreground">{customer.orderCount || 0} طلب</span></div>
                           <div className="text-sm space-y-1">
                             <div className="flex justify-between"><span className="text-muted-foreground">الهاتف:</span><span dir="ltr">{customer.phone || '-'}</span></div>
-                            <div className="flex justify-between"><span className="text-muted-foreground">المشتريات:</span><span className="font-bold">{customer.totalSpent ? formatPrice(customer.totalSpent) : '0 ر.ي'}</span></div>
+                            <div className="flex justify-between"><span className="text-muted-foreground">المشتريات:</span><span className="font-bold">{customer.totalSpent ? formatPrice(customer.totalSpent) : '0 ر.س'}</span></div>
                           </div>
                           {customer.phone && (
                             <a href={`https://wa.me/${customer.phone.replace(/[^0-9]/g, '')}`} target="_blank" rel="noopener noreferrer"
@@ -2764,7 +2764,7 @@ export default function Home() {
                               <TableCell className="text-sm">{coupon.minOrder ? formatPrice(coupon.minOrder) : '-'}</TableCell>
                               <TableCell className="text-sm">{coupon.usedCount}/{coupon.usageLimit || '∞'}</TableCell>
                               <TableCell><Badge className={coupon.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>{coupon.isActive ? 'مفعّل' : 'معطّل'}</Badge></TableCell>
-                              <TableCell className="text-xs text-muted-foreground">{coupon.expiresAt ? new Date(coupon.expiresAt).toLocaleDateString('ar-YE') : 'بدون انتهاء'}</TableCell>
+                              <TableCell className="text-xs text-muted-foreground">{coupon.expiresAt ? new Date(coupon.expiresAt).toLocaleDateString('ar-SA') : 'بدون انتهاء'}</TableCell>
                               <TableCell className="flex gap-1">
                                 <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setEditCoupon(coupon); setShowCouponModal(true); }}><Edit size={14} /></Button>
                                 <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500" onClick={async () => { await fetch(`/api/coupons/all?id=${coupon.id}`, { method: 'DELETE' }); fetchAdminData(); }}><Trash2 size={14} /></Button>
@@ -2873,8 +2873,8 @@ export default function Home() {
             </div>
             <div><Label>الوصف</Label><Textarea value={editProduct?.description || ''} onChange={(e) => setEditProduct({ ...editProduct, description: e.target.value })} /></div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div><Label>السعر (ر.ي) *</Label><Input type="number" value={editProduct?.price || 0} onChange={(e) => setEditProduct({ ...editProduct, price: Number(e.target.value) })} placeholder="سعر البيع" /></div>
-              <div><Label>السعر قبل الخصم (ر.ي)</Label><Input type="number" value={editProduct?.comparePrice || ''} onChange={(e) => setEditProduct({ ...editProduct, comparePrice: e.target.value ? Number(e.target.value) : undefined })} placeholder="اتركه فارغ = بدون خصم" /></div>
+              <div><Label>السعر (ر.س) *</Label><Input type="number" value={editProduct?.price || 0} onChange={(e) => setEditProduct({ ...editProduct, price: Number(e.target.value) })} placeholder="سعر البيع" /></div>
+              <div><Label>السعر قبل الخصم (ر.س)</Label><Input type="number" value={editProduct?.comparePrice || ''} onChange={(e) => setEditProduct({ ...editProduct, comparePrice: e.target.value ? Number(e.target.value) : undefined })} placeholder="اتركه فارغ = بدون خصم" /></div>
               <div><Label>المخزون</Label><Input type="number" value={editProduct?.stock || 0} onChange={(e) => setEditProduct({ ...editProduct, stock: Number(e.target.value) })} /></div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -3220,7 +3220,7 @@ export default function Home() {
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="percentage">نسبة مئوية (%)</SelectItem>
-                  <SelectItem value="fixed">مبلغ ثابت (ر.ي)</SelectItem>
+                  <SelectItem value="fixed">مبلغ ثابت (ر.س)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -3487,7 +3487,7 @@ export default function Home() {
                   </SelectContent>
                 </Select>
               </div>
-              <div><Label>السعر المتوقع (ر.ي)</Label><Input type="number" value={requestForm.expectedPrice} onChange={(e) => setRequestForm({...requestForm, expectedPrice: e.target.value})} placeholder="0" /></div>
+              <div><Label>السعر المتوقع (ر.س)</Label><Input type="number" value={requestForm.expectedPrice} onChange={(e) => setRequestForm({...requestForm, expectedPrice: e.target.value})} placeholder="0" /></div>
             </div>
             <div><Label>رابط المنتج</Label><Input value={requestForm.link} onChange={(e) => setRequestForm({...requestForm, link: e.target.value})} placeholder="رابط من أي متجر آخر" dir="ltr" /></div>
           </div>
@@ -3519,7 +3519,7 @@ export default function Home() {
                   <div className="text-sm space-y-1">
                     <div className="flex justify-between"><span className="text-muted-foreground">الإجمالي:</span><span className="font-medium">{formatPrice(trackResult.total)}</span></div>
                     <div className="flex justify-between"><span className="text-muted-foreground">طريقة الدفع:</span><span>{trackResult.paymentMethod === 'karimi' ? 'كريمي' : trackResult.paymentMethod === 'qataybi' ? 'قطيبي' : trackResult.paymentMethod === 'jeeb' ? 'جيب' : 'عند الاستلام'}</span></div>
-                    <div className="flex justify-between"><span className="text-muted-foreground">التاريخ:</span><span>{new Date(trackResult.createdAt).toLocaleDateString('ar-YE')}</span></div>
+                    <div className="flex justify-between"><span className="text-muted-foreground">التاريخ:</span><span>{new Date(trackResult.createdAt).toLocaleDateString('ar-SA')}</span></div>
                   </div>
                   {/* Status Steps */}
                   <div className="mt-4 space-y-2" dir="ltr">

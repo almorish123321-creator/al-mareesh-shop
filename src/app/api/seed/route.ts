@@ -80,7 +80,7 @@ export async function GET() {
     await db.setting.createMany({ data: [
       { key: 'store_name', value: 'المريش شوب' }, { key: 'store_name_en', value: 'Al-Mareesh Shop' },
       { key: 'store_email', value: 'info@mareesh.com' }, { key: 'store_phone', value: '+967776792012' },
-      { key: 'store_currency', value: 'YER' }, { key: 'store_language', value: 'ar' },
+      { key: 'store_currency', value: 'SAR' }, { key: 'store_language', value: 'ar' },
       { key: 'shipping_cost', value: '500' }, { key: 'free_shipping_threshold', value: '5000' },
     ] });
 
