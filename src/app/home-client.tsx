@@ -168,6 +168,12 @@ export default function Home() {
   const [shopSelectedCategories, setShopSelectedCategories] = useState<string[]>([]);
   const [couponCode, setCouponCode] = useState('');
   const [couponDiscount, setCouponDiscount] = useState(0);
+  const [adminOrderFilter, setAdminOrderFilter] = useState('all');
+  const [adminOrderSearch, setAdminOrderSearch] = useState('');
+  const [adminCoupons, setAdminCoupons] = useState<any[]>([]);
+  const [editCoupon, setEditCoupon] = useState<any>(null);
+  const [showCouponModal, setShowCouponModal] = useState(false);
+  const [adminCustomers, setAdminCustomers] = useState<any[]>([]);
   const [selectedSize, setSelectedSize] = useState<string>('');
   const [selectedColor, setSelectedColor] = useState<string>('');
   const [productQty, setProductQty] = useState(1);
@@ -309,12 +315,16 @@ export default function Home() {
   const fetchAdminData = useCallback(async () => {
     if (user?.role !== 'admin') return;
     try {
-      const [statsRes, ordersRes] = await Promise.all([
+      const [statsRes, ordersRes, couponsRes, customersRes] = await Promise.all([
         fetch('/api/admin/stats').catch(() => null),
         fetch('/api/orders').catch(() => null),
+        fetch('/api/coupons/all').catch(() => null),
+        fetch('/api/customers').catch(() => null),
       ]);
       try { if (statsRes?.ok) setAdminStats(await statsRes.json()); } catch { /* ignore */ }
       try { if (ordersRes?.ok) setAdminOrders(await ordersRes.json()); } catch { /* ignore */ }
+      try { if (couponsRes?.ok) setAdminCoupons(await couponsRes.json()); } catch { /* ignore */ }
+      try { if (customersRes?.ok) setAdminCustomers(await customersRes.json()); } catch { /* ignore */ }
       setAdminProducts(products);
     } catch (err) {
       console.error('Admin fetch error:', err);
@@ -422,7 +432,21 @@ export default function Home() {
   };
 
   const cartSubtotal = cart.reduce((sum: number, c: CartItemType) => sum + c.price * c.quantity, 0);
-  const shippingCost = cartSubtotal >= (parseFloat(settings.free_shipping_threshold || '300')) ? 0 : parseFloat(settings.shipping_cost || '25');
+  // تكلفة الشحن حسب المحافظة اليمنية
+  const yemenCities: Record<string, number> = {
+    'صنعاء': 0, 'عدن': 500, 'تعز': 400, 'الحديدة': 400, 'إب': 350,
+    'ذمار': 300, 'المكلا': 600, 'حضرموت': 600, 'عمران': 200, 'صعدة': 350,
+    'البيضاء': 350, 'مأرب': 400, 'لحج': 450, 'أبين': 500, 'شبوة': 500,
+    'حجة': 300, 'المهرة': 700, 'ريمة': 350, 'سقطرى': 800, 'الضالع': 350,
+    'الجوف': 350, 'صالح': 300, 'دمت': 300, 'السويدة': 350,
+  };
+  const getShippingCost = () => {
+    if (cartSubtotal >= parseFloat(settings.free_shipping_threshold || '5000')) return 0;
+    const baseCost = parseFloat(settings.shipping_cost || '500');
+    const cityCost = yemenCities[checkoutForm.city] ?? baseCost;
+    return cityCost;
+  };
+  const shippingCost = view === 'checkout' ? getShippingCost() : (cartSubtotal >= parseFloat(settings.free_shipping_threshold || '5000') ? 0 : parseFloat(settings.shipping_cost || '500'));
   const cartTax = Math.round(cartSubtotal * 0.02); // 2% tax
   const cartTotal = cartSubtotal + shippingCost - couponDiscount + cartTax;
 
@@ -481,8 +505,15 @@ export default function Home() {
       setCart([]);
       setCouponDiscount(0);
       setCouponCode('');
-      setAdminRefreshKey(k => k + 1); // Refresh admin orders
+      setAdminRefreshKey(k => k + 1);
       showNotification('تم تقديم الطلب بنجاح!', 'success');
+      // إرسال إشعار واتساب تلقائي للأدمن بتفاصيل الطلب
+      try {
+        const itemsText = cart.map((c: CartItemType) => `• ${c.name} × ${c.quantity} = ${formatPrice(c.price * c.quantity)}`).join('\n');
+        const paymentLabel = checkoutForm.paymentMethod === 'karimi' ? 'كريمي' : checkoutForm.paymentMethod === 'qutaibi' ? 'قطيبي' : checkoutForm.paymentMethod === 'jeeb' ? 'جيب' : 'عند الاستلام';
+        const adminMsg = `🛒 *طلب جديد - المريش شوب*\n\n📋 رقم الطلب: ${order.orderNumber}\n👤 العميل: ${checkoutForm.name}\n📞 الهاتف: ${checkoutForm.phone}\n📍 العنوان: ${checkoutForm.address}, ${checkoutForm.city}\n\n📦 المنتجات:\n${itemsText}\n\n💰 الإجمالي: ${formatPrice(cartTotal)}\n💳 الدفع: ${paymentLabel}\n${checkoutForm.notes ? '📝 ملاحظات: ' + checkoutForm.notes : ''}`;
+        window.open(`https://wa.me/967776792012?text=${encodeURIComponent(adminMsg)}`, '_blank');
+      } catch { /* ignore whatsapp error */ }
     } catch { showNotification('خطأ في تقديم الطلب - يرجى المحاولة مرة أخرى', 'error'); }
   };
 
@@ -699,7 +730,7 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 flex justify-between items-center">
           <span>🚚 شحن مجاني للطلبات فوق {settings.free_shipping_threshold || '5000'} ر.ي</span>
           <div className="flex items-center gap-3">
-            <span className="hidden sm:inline">📞 {settings.store_phone || '+967700000000'}</span>
+            <span className="hidden sm:inline">📞 {settings.store_phone || '+967776792012'}</span>
             <button
               onClick={() => setCurrency(currency === 'YER' ? 'USD' : 'YER')}
               className="px-2 py-0.5 bg-white/20 rounded text-xs font-bold hover:bg-white/30 transition-colors"
@@ -1671,7 +1702,7 @@ export default function Home() {
                   onClick={() => {
                     const items = cart.map((c: CartItemType) => `${c.name} × ${c.quantity} = ${formatPrice(c.price * c.quantity)}`).join('\n');
                     const msg = `🛒 سلة التسوق - المريش شوب\n\n${items}\n\nالمجموع: ${formatPrice(cartTotal)}\n\nأريد تأكيد الطلب`;
-                    window.open(`https://wa.me/${settings.store_phone?.replace(/[^0-9]/g, '') || '967700000000'}?text=${encodeURIComponent(msg)}`, '_blank');
+                    window.open(`https://wa.me/${settings.store_phone?.replace(/[^0-9]/g, '') || '967776792012'}?text=${encodeURIComponent(msg)}`, '_blank');
                   }}>
                   <MessageCircle size={16} /> مشاركة عبر واتساب
                 </Button>
@@ -1741,7 +1772,14 @@ export default function Home() {
                   </div>
                   <div><Label>العنوان *</Label><Input value={checkoutForm.address} onChange={(e) => setCheckoutForm({ ...checkoutForm, address: e.target.value })} placeholder="الحي، الشارع، رقم المبنى" /></div>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div><Label>المدينة *</Label><Input value={checkoutForm.city} onChange={(e) => setCheckoutForm({ ...checkoutForm, city: e.target.value })} placeholder="صنعاء" /></div>
+                    <div><Label>المدينة *</Label>
+                      <Select value={checkoutForm.city} onValueChange={(v) => setCheckoutForm({ ...checkoutForm, city: v })}>
+                        <SelectTrigger><SelectValue placeholder="اختر المحافظة" /></SelectTrigger>
+                        <SelectContent>
+                          {Object.keys(yemenCities).map(city => <SelectItem key={city} value={city}>{city} {yemenCities[city] === 0 ? '(شحن مجاني)' : `(${formatPrice(yemenCities[city])} شحن)`}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
                     <div><Label>الدولة</Label><Input value={checkoutForm.country} onChange={(e) => setCheckoutForm({ ...checkoutForm, country: e.target.value })} /></div>
                     <div><Label>الرمز البريدي</Label><Input value={checkoutForm.postalCode} onChange={(e) => setCheckoutForm({ ...checkoutForm, postalCode: e.target.value })} /></div>
                   </div>
@@ -1766,7 +1804,7 @@ export default function Home() {
                         <div className="mt-3 p-3 bg-mareesh/5 rounded-lg border border-mareesh/20 space-y-2 text-sm animate-fade-in">
                           <p className="font-bold text-mareesh">تفاصيل الدفع عبر كريمي:</p>
                           <div className="flex items-center gap-2"><span className="text-muted-foreground">اسم المستلم:</span><span className="font-medium">المريش شوب</span></div>
-                          <div className="flex items-center gap-2"><span className="text-muted-foreground">رقم الهاتف:</span><span className="font-medium font-mono" dir="ltr">+967 777 123 456</span></div>
+                          <div className="flex items-center gap-2"><span className="text-muted-foreground">رقم الهاتف:</span><span className="font-medium font-mono" dir="ltr">+967 776 792 012</span></div>
                           <p className="text-xs text-muted-foreground mt-2">يرجى تحويل المبلغ ثم إرسال إيصال التحويل عبر واتساب</p>
                         </div>
                       )
@@ -1780,7 +1818,7 @@ export default function Home() {
                         <div className="mt-3 p-3 bg-gold/10 rounded-lg border border-gold/20 space-y-2 text-sm animate-fade-in">
                           <p className="font-bold text-gold">تفاصيل الدفع عبر قطيبي:</p>
                           <div className="flex items-center gap-2"><span className="text-muted-foreground">اسم المستلم:</span><span className="font-medium">المريش شوب</span></div>
-                          <div className="flex items-center gap-2"><span className="text-muted-foreground">رقم الهاتف:</span><span className="font-medium font-mono" dir="ltr">+967 777 123 456</span></div>
+                          <div className="flex items-center gap-2"><span className="text-muted-foreground">رقم الهاتف:</span><span className="font-medium font-mono" dir="ltr">+967 776 792 012</span></div>
                           <p className="text-xs text-muted-foreground mt-2">يرجى تحويل المبلغ ثم إرسال إيصال التحويل عبر واتساب</p>
                         </div>
                       )
@@ -1793,7 +1831,7 @@ export default function Home() {
                       details: (
                         <div className="mt-3 p-3 bg-emerald-50 rounded-lg border border-emerald-200 space-y-2 text-sm animate-fade-in">
                           <p className="font-bold text-emerald-700">تفاصيل الدفع عبر محفظة جيب:</p>
-                          <div className="flex items-center gap-2"><span className="text-muted-foreground">رقم المحفظة:</span><span className="font-medium font-mono" dir="ltr">+967 777 123 456</span></div>
+                          <div className="flex items-center gap-2"><span className="text-muted-foreground">رقم المحفظة:</span><span className="font-medium font-mono" dir="ltr">+967 776 792 012</span></div>
                           <div className="flex items-center gap-2"><span className="text-muted-foreground">اسم الحساب:</span><span className="font-medium">المريش شوب</span></div>
                           <p className="text-xs text-muted-foreground mt-2">يرجى تحويل المبلغ من محفظة جيب وإرسال إيصال التحويل عبر واتساب</p>
                         </div>
@@ -1954,7 +1992,7 @@ export default function Home() {
           <Card>
             <CardContent className="p-6 flex items-center gap-4">
               <div className="w-12 h-12 bg-mareesh/10 rounded-xl flex items-center justify-center"><Phone className="text-mareesh" size={22} /></div>
-              <div><h4 className="font-semibold">اتصل بنا</h4><p className="text-sm text-muted-foreground">{settings.store_phone || '+967700000000'}</p></div>
+              <div><h4 className="font-semibold">اتصل بنا</h4><p className="text-sm text-muted-foreground">{settings.store_phone || '+967776792012'}</p></div>
             </CardContent>
           </Card>
           <Card>
@@ -2177,19 +2215,33 @@ export default function Home() {
           )}
 
           {/* Orders */}
-          {adminTab === 'orders' && (
+          {adminTab === 'orders' && (() => {
+            const filteredOrders = adminOrders.filter(o => adminOrderFilter === 'all' || o.status === adminOrderFilter).filter(o => !adminOrderSearch || o.orderNumber.toLowerCase().includes(adminOrderSearch.toLowerCase()) || o.shippingName.includes(adminOrderSearch) || o.shippingPhone.includes(adminOrderSearch));
+            return (
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h2 className="text-xl font-bold text-mareesh">الطلبات ({adminOrders.length})</h2>
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <h2 className="text-xl font-bold text-mareesh">الطلبات ({filteredOrders.length})</h2>
                 <Button onClick={() => setAdminRefreshKey(k => k + 1)} variant="outline" size="sm" className="border-mareesh text-mareesh">
                   <RotateCcw size={14} className="ml-1" /> تحديث
                 </Button>
               </div>
-              {adminOrders.length === 0 ? (
+              {/* Order Filters */}
+              <div className="flex flex-wrap gap-3 items-center">
+                <Input placeholder="بحث برقم الطلب، الاسم، أو الهاتف..." value={adminOrderSearch} onChange={(e) => setAdminOrderSearch(e.target.value)} className="max-w-xs h-9 text-sm" />
+                <div className="flex gap-1 flex-wrap">
+                  {[{value:'all',label:'الكل'},{value:'pending',label:'قيد الانتظار'},{value:'processing',label:'قيد المعالجة'},{value:'shipped',label:'تم الشحن'},{value:'delivered',label:'تم التوصيل'},{value:'cancelled',label:'ملغي'}].map(f => (
+                    <button key={f.value} onClick={() => setAdminOrderFilter(f.value)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${adminOrderFilter === f.value ? 'bg-mareesh text-white' : 'bg-cream-dark text-muted-foreground hover:bg-mareesh/10'}`}>
+                      {f.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {filteredOrders.length === 0 ? (
                 <Card>
                   <CardContent className="p-8 text-center text-muted-foreground">
                     <ShoppingBag size={48} className="mx-auto mb-4 opacity-30" />
-                    <p>لا توجد طلبات بعد</p>
+                    <p>لا توجد طلبات</p>
                     <p className="text-sm mt-1">ستظهر الطلبات هنا عندما يقدم العملاء طلباتهم</p>
                   </CardContent>
                 </Card>
@@ -2214,7 +2266,7 @@ export default function Home() {
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {adminOrders.map((order) => (
+                          {filteredOrders.map((order) => (
                             <TableRow key={order.id} className="cursor-pointer hover:bg-mareesh/5">
                               <TableCell className="font-mono text-sm font-bold text-mareesh">{order.orderNumber}</TableCell>
                               <TableCell className="text-sm">{order.shippingName}</TableCell>
@@ -2238,11 +2290,15 @@ export default function Home() {
                                   </SelectContent>
                                 </Select>
                               </TableCell>
-                              <TableCell>
+                              <TableCell className="flex gap-1">
                                 <Button variant="ghost" size="icon" className="h-8 w-8"
                                   onClick={() => { setSelectedOrder(order); setShowOrderDetail(true); }}>
                                   <Eye size={16} className="text-mareesh" />
                                 </Button>
+                                <a href={`https://wa.me/${order.shippingPhone?.replace(/[^0-9]/g, '')}?text=${encodeURIComponent('مرحباً ' + order.shippingName + '، بخصوص طلبكم رقم ' + order.orderNumber + ' من المريش شوب.')}`} target="_blank" rel="noopener noreferrer"
+                                  className="h-8 w-8 inline-flex items-center justify-center rounded-md hover:bg-green-50 text-green-600">
+                                  <MessageCircle size={16} />
+                                </a>
                               </TableCell>
                             </TableRow>
                           ))}
@@ -2251,7 +2307,7 @@ export default function Home() {
                     </div>
                     {/* Mobile Cards */}
                     <div className="md:hidden divide-y">
-                      {adminOrders.map((order) => (
+                      {filteredOrders.map((order) => (
                         <div key={order.id} className="p-4 space-y-2">
                           <div className="flex items-center justify-between">
                             <span className="font-mono font-bold text-mareesh text-sm">{order.orderNumber}</span>
@@ -2286,54 +2342,156 @@ export default function Home() {
                 </Card>
               )}
             </div>
-          )}
+            );
+          })()}
 
           {/* Customers */}
           {adminTab === 'customers' && (
             <div className="space-y-4">
-              <h2 className="text-xl font-bold text-mareesh">العملاء</h2>
-              <Card>
-                <CardContent className="p-6 text-center text-muted-foreground">
-                  <Users size={48} className="mx-auto mb-4 opacity-30" />
-                  <p>سيتم عرض بيانات العملاء هنا</p>
-                  <p className="text-sm mt-1">إجمالي العملاء: {adminStats?.totalUsers || 0}</p>
-                </CardContent>
-              </Card>
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-bold text-mareesh">العملاء ({adminCustomers.length})</h2>
+              </div>
+              {adminCustomers.length === 0 ? (
+                <Card>
+                  <CardContent className="p-8 text-center text-muted-foreground">
+                    <Users size={48} className="mx-auto mb-4 opacity-30" />
+                    <p>لا يوجد عملاء بعد</p>
+                    <p className="text-sm mt-1">سيظهر العملاء هنا عند تسجيلهم أو تقديم طلبات</p>
+                  </CardContent>
+                </Card>
+              ) : (
+                <Card>
+                  <CardContent className="p-0">
+                    <div className="hidden md:block">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="text-right">الاسم</TableHead>
+                            <TableHead className="text-right">البريد</TableHead>
+                            <TableHead className="text-right">الهاتف</TableHead>
+                            <TableHead className="text-right">المدينة</TableHead>
+                            <TableHead className="text-right">الطلبات</TableHead>
+                            <TableHead className="text-right">إجمالي المشتريات</TableHead>
+                            <TableHead className="text-right">تاريخ التسجيل</TableHead>
+                            <TableHead className="text-right">واتساب</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {adminCustomers.map((customer: any) => (
+                            <TableRow key={customer.id}>
+                              <TableCell className="font-medium text-sm">{customer.name}</TableCell>
+                              <TableCell className="text-xs text-muted-foreground">{customer.email}</TableCell>
+                              <TableCell className="text-sm font-mono" dir="ltr">{customer.phone || '-'}</TableCell>
+                              <TableCell className="text-sm">{customer.city || '-'}</TableCell>
+                              <TableCell className="text-sm font-bold text-mareesh">{customer.orderCount || 0}</TableCell>
+                              <TableCell className="text-sm font-bold">{customer.totalSpent ? formatPrice(customer.totalSpent) : '0 ر.ي'}</TableCell>
+                              <TableCell className="text-xs text-muted-foreground">{new Date(customer.createdAt).toLocaleDateString('ar-YE')}</TableCell>
+                              <TableCell>
+                                {customer.phone && (
+                                  <a href={`https://wa.me/${customer.phone.replace(/[^0-9]/g, '')}`} target="_blank" rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-1 text-green-600 hover:text-green-700 text-xs">
+                                    <MessageCircle size={14} /> تواصل
+                                  </a>
+                                )}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                    <div className="md:hidden divide-y">
+                      {adminCustomers.map((customer: any) => (
+                        <div key={customer.id} className="p-4 space-y-2">
+                          <div className="flex justify-between"><span className="font-medium">{customer.name}</span><span className="text-xs text-muted-foreground">{customer.orderCount || 0} طلب</span></div>
+                          <div className="text-sm space-y-1">
+                            <div className="flex justify-between"><span className="text-muted-foreground">الهاتف:</span><span dir="ltr">{customer.phone || '-'}</span></div>
+                            <div className="flex justify-between"><span className="text-muted-foreground">المشتريات:</span><span className="font-bold">{customer.totalSpent ? formatPrice(customer.totalSpent) : '0 ر.ي'}</span></div>
+                          </div>
+                          {customer.phone && (
+                            <a href={`https://wa.me/${customer.phone.replace(/[^0-9]/g, '')}`} target="_blank" rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 text-green-600 text-xs mt-1">
+                              <MessageCircle size={14} /> تواصل عبر واتساب
+                            </a>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
             </div>
           )}
 
           {/* Coupons */}
           {adminTab === 'coupons' && (
             <div className="space-y-4">
-              <h2 className="text-xl font-bold text-mareesh">الكوبونات</h2>
-              <Card>
-                <CardContent className="p-0">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="text-right">الكود</TableHead>
-                        <TableHead className="text-right">النوع</TableHead>
-                        <TableHead className="text-right">القيمة</TableHead>
-                        <TableHead className="text-right">الحد الأدنى</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      <TableRow>
-                        <TableCell className="font-mono font-bold">WELCOME10</TableCell>
-                        <TableCell>نسبة مئوية</TableCell>
-                        <TableCell>10%</TableCell>
-                        <TableCell>100 ر.ي</TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell className="font-mono font-bold">MAREESH50</TableCell>
-                        <TableCell>مبلغ ثابت</TableCell>
-                        <TableCell>50 ر.ي</TableCell>
-                        <TableCell>200 ر.ي</TableCell>
-                      </TableRow>
-                    </TableBody>
-                  </Table>
-                </CardContent>
-              </Card>
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-bold text-mareesh">الكوبونات ({adminCoupons.length})</h2>
+                <Button onClick={() => { setEditCoupon({ code: '', type: 'percentage', value: 0, minOrder: null, maxDiscount: null, usageLimit: null, isActive: true }); setShowCouponModal(true); }} className="bg-mareesh text-white h-9">
+                  <Plus size={16} className="ml-1" /> إضافة كوبون
+                </Button>
+              </div>
+              {adminCoupons.length === 0 ? (
+                <Card>
+                  <CardContent className="p-8 text-center text-muted-foreground">
+                    <Tags size={48} className="mx-auto mb-4 opacity-30" />
+                    <p>لا توجد كوبونات</p>
+                    <p className="text-sm mt-1">أضف كوبونات خصم لجذب العملاء</p>
+                  </CardContent>
+                </Card>
+              ) : (
+                <Card>
+                  <CardContent className="p-0">
+                    <div className="hidden md:block">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="text-right">الكود</TableHead>
+                            <TableHead className="text-right">النوع</TableHead>
+                            <TableHead className="text-right">القيمة</TableHead>
+                            <TableHead className="text-right">الحد الأدنى</TableHead>
+                            <TableHead className="text-right">الاستخدام</TableHead>
+                            <TableHead className="text-right">الحالة</TableHead>
+                            <TableHead className="text-right">الصلاحية</TableHead>
+                            <TableHead></TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {adminCoupons.map((coupon: any) => (
+                            <TableRow key={coupon.id}>
+                              <TableCell className="font-mono font-bold text-mareesh">{coupon.code}</TableCell>
+                              <TableCell className="text-sm">{coupon.type === 'percentage' ? 'نسبة مئوية' : 'مبلغ ثابت'}</TableCell>
+                              <TableCell className="text-sm font-bold">{coupon.type === 'percentage' ? `${coupon.value}%` : formatPrice(coupon.value)}</TableCell>
+                              <TableCell className="text-sm">{coupon.minOrder ? formatPrice(coupon.minOrder) : '-'}</TableCell>
+                              <TableCell className="text-sm">{coupon.usedCount}/{coupon.usageLimit || '∞'}</TableCell>
+                              <TableCell><Badge className={coupon.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>{coupon.isActive ? 'مفعّل' : 'معطّل'}</Badge></TableCell>
+                              <TableCell className="text-xs text-muted-foreground">{coupon.expiresAt ? new Date(coupon.expiresAt).toLocaleDateString('ar-YE') : 'بدون انتهاء'}</TableCell>
+                              <TableCell className="flex gap-1">
+                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setEditCoupon(coupon); setShowCouponModal(true); }}><Edit size={14} /></Button>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500" onClick={async () => { await fetch(`/api/coupons/all?id=${coupon.id}`, { method: 'DELETE' }); fetchAdminData(); }}><Trash2 size={14} /></Button>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                    <div className="md:hidden divide-y">
+                      {adminCoupons.map((coupon: any) => (
+                        <div key={coupon.id} className="p-4 space-y-2">
+                          <div className="flex justify-between items-center">
+                            <span className="font-mono font-bold text-mareesh">{coupon.code}</span>
+                            <Badge className={coupon.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>{coupon.isActive ? 'مفعّل' : 'معطّل'}</Badge>
+                          </div>
+                          <div className="text-sm">
+                            <span className="font-bold">{coupon.type === 'percentage' ? `${coupon.value}%` : formatPrice(coupon.value)}</span>
+                            <span className="text-muted-foreground"> • {coupon.type === 'percentage' ? 'نسبة' : 'ثابت'} • استخدام: {coupon.usedCount}/{coupon.usageLimit || '∞'}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
             </div>
           )}
 
@@ -2563,6 +2721,65 @@ export default function Home() {
     </Dialog>
   );
 
+  /* ─── COUPON MODAL ─── */
+  const CouponModal = () => (
+    <Dialog open={showCouponModal} onOpenChange={setShowCouponModal}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{editCoupon?.id ? 'تعديل كوبون' : 'إضافة كوبون'}</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div><Label>كود الخصم *</Label><Input value={editCoupon?.code || ''} onChange={(e) => setEditCoupon({ ...editCoupon, code: e.target.value.toUpperCase() })} placeholder="SAVE20" className="font-mono" /></div>
+            <div><Label>النوع</Label>
+              <Select value={editCoupon?.type || 'percentage'} onValueChange={(v) => setEditCoupon({ ...editCoupon, type: v })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="percentage">نسبة مئوية (%)</SelectItem>
+                  <SelectItem value="fixed">مبلغ ثابت (ر.ي)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div><Label>القيمة *</Label><Input type="number" value={editCoupon?.value || ''} onChange={(e) => setEditCoupon({ ...editCoupon, value: Number(e.target.value) })} placeholder={editCoupon?.type === 'percentage' ? '20' : '500'} /></div>
+            <div><Label>الحد الأدنى للطلب</Label><Input type="number" value={editCoupon?.minOrder || ''} onChange={(e) => setEditCoupon({ ...editCoupon, minOrder: e.target.value ? Number(e.target.value) : null })} placeholder="0" /></div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div><Label>الحد الأقصى للخصم</Label><Input type="number" value={editCoupon?.maxDiscount || ''} onChange={(e) => setEditCoupon({ ...editCoupon, maxDiscount: e.target.value ? Number(e.target.value) : null })} placeholder="بدون حد" /></div>
+            <div><Label>حد الاستخدام</Label><Input type="number" value={editCoupon?.usageLimit || ''} onChange={(e) => setEditCoupon({ ...editCoupon, usageLimit: e.target.value ? Number(e.target.value) : null })} placeholder="بدون حد" /></div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div><Label>تاريخ البداية</Label><Input type="date" value={editCoupon?.startsAt ? new Date(editCoupon.startsAt).toISOString().split('T')[0] : ''} onChange={(e) => setEditCoupon({ ...editCoupon, startsAt: e.target.value ? new Date(e.target.value).toISOString() : null })} /></div>
+            <div><Label>تاريخ الانتهاء</Label><Input type="date" value={editCoupon?.expiresAt ? new Date(editCoupon.expiresAt).toISOString().split('T')[0] : ''} onChange={(e) => setEditCoupon({ ...editCoupon, expiresAt: e.target.value ? new Date(e.target.value).toISOString() : null })} /></div>
+          </div>
+          <div className="flex items-center gap-2">
+            <input type="checkbox" checked={editCoupon?.isActive !== false} onChange={(e) => setEditCoupon({ ...editCoupon, isActive: e.target.checked })} className="rounded" />
+            <Label>مفعّل</Label>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setShowCouponModal(false)}>إلغاء</Button>
+          <Button onClick={async () => {
+            if (!editCoupon?.code || !editCoupon?.value) { showNotification('يرجى ملء الكود والقيمة', 'error'); return; }
+            try {
+              const method = editCoupon.id ? 'PUT' : 'POST';
+              const res = await fetch('/api/coupons/all', { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(editCoupon) });
+              if (res.ok) {
+                showNotification(editCoupon.id ? 'تم تحديث الكوبون' : 'تم إضافة الكوبون', 'success');
+                setShowCouponModal(false);
+                fetchAdminData();
+              } else {
+                const data = await res.json();
+                showNotification(data.error || 'خطأ في حفظ الكوبون', 'error');
+              }
+            } catch { showNotification('خطأ في حفظ الكوبون', 'error'); }
+          }} className="bg-mareesh">حفظ</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+
   /* ─── ORDER DETAIL MODAL ─── */
   const OrderDetailModal = () => (
     <Dialog open={showOrderDetail} onOpenChange={setShowOrderDetail}>
@@ -2641,15 +2858,29 @@ export default function Home() {
             </Card>
 
             {/* Actions */}
-            <div className="flex gap-2">
-              <Button className="flex-1 bg-green-600 hover:bg-green-700 text-white"
-                onClick={() => {
-                  const msg = `🛍️ تأكيد طلب - المريش شوب\n\nرقم الطلب: ${selectedOrder.orderNumber}\nالعميل: ${selectedOrder.shippingName}\nالهاتف: ${selectedOrder.shippingPhone}\nالعنوان: ${selectedOrder.shippingAddress}, ${selectedOrder.shippingCity}\n\nالمنتجات:\n${selectedOrder.items?.map(i => `• ${i.name} × ${i.quantity} = ${formatPrice(i.total)}`).join('\n')}\n\nالإجمالي: ${formatPrice(selectedOrder.total)}\nطريقة الدفع: ${selectedOrder.paymentMethod === 'karimi' ? 'كريمي' : selectedOrder.paymentMethod === 'qutaibi' ? 'قطيبي' : selectedOrder.paymentMethod === 'jeeb' ? 'جيب' : 'عند الاستلام'}`;
-                  window.open(`https://wa.me/${settings.store_phone?.replace(/[^0-9]/g, '') || '967700000000'}?text=${encodeURIComponent(msg)}`, '_blank');
+            <div className="space-y-3">
+              <div className="flex gap-2">
+                <Button className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+                  onClick={() => {
+                    const msg = `🛍️ تأكيد طلب - المريش شوب\n\nرقم الطلب: ${selectedOrder.orderNumber}\nالعميل: ${selectedOrder.shippingName}\nالهاتف: ${selectedOrder.shippingPhone}\nالعنوان: ${selectedOrder.shippingAddress}, ${selectedOrder.shippingCity}\n\nالمنتجات:\n${selectedOrder.items?.map(i => `• ${i.name} × ${i.quantity} = ${formatPrice(i.total)}`).join('\n')}\n\nالإجمالي: ${formatPrice(selectedOrder.total)}\nطريقة الدفع: ${selectedOrder.paymentMethod === 'karimi' ? 'كريمي' : selectedOrder.paymentMethod === 'qutaibi' ? 'قطيبي' : selectedOrder.paymentMethod === 'jeeb' ? 'جيب' : 'عند الاستلام'}`;
+                    window.open(`https://wa.me/967776792012?text=${encodeURIComponent(msg)}`, '_blank');
+                  }}>
+                  <MessageCircle size={16} className="ml-1" /> إرسال للأدمن
+                </Button>
+                <a href={`https://wa.me/${selectedOrder.shippingPhone?.replace(/[^0-9]/g, '')}?text=${encodeURIComponent('مرحباً ' + selectedOrder.shippingName + '، بخصوص طلبكم رقم ' + selectedOrder.orderNumber + ' من المريش شوب.')}`} target="_blank" rel="noopener noreferrer"
+                  className="flex-1 h-10 inline-flex items-center justify-center gap-2 rounded-md bg-[#25D366] text-white hover:bg-[#20BD5A] font-medium text-sm">
+                  <MessageCircle size={16} /> تواصل مع العميل
+                </a>
+              </div>
+              <div className="flex gap-2">
+                <Button variant="outline" className="flex-1" onClick={() => {
+                  navigator.clipboard.writeText(selectedOrder.orderNumber);
+                  showNotification('تم نسخ رقم الطلب', 'success');
                 }}>
-                <MessageCircle size={16} className="ml-1" /> تواصل مع العميل
-              </Button>
-              <Button variant="outline" className="flex-1" onClick={() => setShowOrderDetail(false)}>إغلاق</Button>
+                  <Copy size={16} className="ml-1" /> نسخ رقم الطلب
+                </Button>
+                <Button variant="outline" className="flex-1" onClick={() => setShowOrderDetail(false)}>إغلاق</Button>
+              </div>
             </div>
           </div>
         )}
@@ -2673,8 +2904,9 @@ export default function Home() {
             <p className="text-sm text-[#F5E6D3]/70 leading-relaxed">متجرك المفضل لملابس الأطفال والنسائية والأحذية بأسعار مميزة وجودة عالية.</p>
             <div className="flex gap-3 mt-4">
               {[
-                { icon: <Send size={16} />, label: 'تلجرام', href: 'https://t.me/almareesh_shop', color: 'hover:bg-[#0088cc]' },
-                { icon: <MessageCircle size={16} />, label: 'واتساب', href: 'https://wa.me/967700000000', color: 'hover:bg-[#25D366]' },
+                { icon: <Send size={16} />, label: 'تلجرام', href: 'https://t.me/almorishshop', color: 'hover:bg-[#0088cc]' },
+                { icon: <MessageCircle size={16} />, label: 'واتساب', href: 'https://wa.me/967776792012', color: 'hover:bg-[#25D366]' },
+                { icon: <MessageCircle size={16} />, label: 'قناة واتساب', href: 'https://whatsapp.com/channel/0029VbCe7YL2ER6fSWLU0S1k', color: 'hover:bg-[#25D366]' },
                 { icon: <Instagram size={16} />, label: 'انستقرام', href: '#', color: 'hover:bg-[#E1306C]' },
                 { icon: <Facebook size={16} />, label: 'فيسبوك', href: '#', color: 'hover:bg-[#1877F2]' },
               ].map((social, idx) => (
@@ -2742,7 +2974,7 @@ export default function Home() {
           <div>
             <h4 className="font-bold mb-4 text-gold">تواصل معنا</h4>
             <div className="space-y-3">
-              <div className="flex items-center gap-2 text-sm text-[#F5E6D3]/70"><Phone size={14} className="text-gold shrink-0" /> {settings.store_phone || '+967700000000'}</div>
+              <div className="flex items-center gap-2 text-sm text-[#F5E6D3]/70"><Phone size={14} className="text-gold shrink-0" /> {settings.store_phone || '+967776792012'}</div>
               <div className="flex items-center gap-2 text-sm text-[#F5E6D3]/70"><Mail size={14} className="text-gold shrink-0" /> {settings.store_email || 'info@mareesh.com'}</div>
               <div className="flex items-center gap-2 text-sm text-[#F5E6D3]/70"><MapPin size={14} className="text-gold shrink-0" /> اليمن</div>
             </div>
@@ -2785,6 +3017,7 @@ export default function Home() {
       {AuthModal()}
       {ProductModal()}
       {CategoryModal()}
+      {CouponModal()}
       {OrderDetailModal()}
 
       {Header()}
@@ -2809,11 +3042,11 @@ export default function Home() {
             className="w-14 h-14 bg-gradient-to-br from-mareesh to-mareesh-dark text-white rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform" title="شات ذكي">
             <Sparkles size={28} />
           </button>
-          <a href="https://wa.me/967700000000" target="_blank" rel="noopener noreferrer"
+          <a href="https://wa.me/967776792012" target="_blank" rel="noopener noreferrer"
             className="w-14 h-14 bg-[#25D366] text-white rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform" title="تواصل عبر واتساب">
             <MessageCircle size={28} />
           </a>
-          <a href="https://t.me/almareesh_shop" target="_blank" rel="noopener noreferrer"
+          <a href="https://t.me/almorishshop" target="_blank" rel="noopener noreferrer"
             className="w-14 h-14 bg-[#0088cc] text-white rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform" title="تواصل عبر تلجرام">
             <Send size={28} />
           </a>
