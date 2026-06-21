@@ -46,6 +46,15 @@ interface SliderType {
   subtitleEn?: string; image: string; link?: string; sortOrder: number;
 }
 
+interface BundleType {
+  id: string; name: string; description?: string; image?: string;
+  discount: number; products: BundleProductType[];
+}
+
+interface BundleProductType {
+  productId: string; name: string; price: number; image: string; quantity: number;
+}
+
 interface CartItemType {
   id?: string; productId: string; name: string; price: number;
   image: string; quantity: number; size?: string; color?: string;
@@ -197,6 +206,45 @@ export default function Home() {
 
   /* ─── CART NOTES ─── */
   const [cartNotes, setCartNotes] = useState('');
+
+  /* ─── CURRENCY ─── */
+  const [currency, setCurrency] = useState<'YER' | 'USD'>('YER');
+  const usdRate = 530; // 1 USD = 530 YER
+  const formatPriceCurrency = (price: number) => {
+    if (currency === 'USD') return '$' + (price / usdRate).toFixed(2);
+    return price.toLocaleString('ar-YE') + ' ر.ي';
+  };
+
+  /* ─── BUNDLES ─── */
+  const [bundles] = useState<BundleType[]>([
+    {
+      id: 'b1', name: 'باقة الأناقة النسائية', description: 'طقم كامل بخصم خاص', discount: 15,
+      image: '',
+      products: [
+        { productId: '', name: 'عباية نسائية فاخرة', price: 8000, image: '', quantity: 1 },
+        { productId: '', name: 'حجاب قطني مميز', price: 1500, image: '', quantity: 2 },
+        { productId: '', name: 'حذاء نسائي أنيق', price: 5000, image: '', quantity: 1 },
+      ]
+    },
+    {
+      id: 'b2', name: 'باقة الطفل السعيد', description: 'كل ما يحتاجه طفلك بخصم مميز', discount: 10,
+      image: '',
+      products: [
+        { productId: '', name: 'بجامة أطفال قطنية', price: 2500, image: '', quantity: 2 },
+        { productId: '', name: 'حذاء أطفال مريح', price: 3000, image: '', quantity: 1 },
+        { productId: '', name: 'شنطة مدرسية', price: 4500, image: '', quantity: 1 },
+      ]
+    },
+    {
+      id: 'b3', name: 'باقة الرجل العصري', description: 'إطلالة كاملة بأسعار لا تُقاوم', discount: 12,
+      image: '',
+      products: [
+        { productId: '', name: 'قميص رجالي كلاسيك', price: 6000, image: '', quantity: 1 },
+        { productId: '', name: 'بنطلون رجالي', price: 7000, image: '', quantity: 1 },
+        { productId: '', name: 'حذاء رجالي جلد', price: 12000, image: '', quantity: 1 },
+      ]
+    },
+  ]);
 
   /* ─── REQUEST PRODUCT ─── */
   const [showRequestModal, setShowRequestModal] = useState(false);
@@ -640,7 +688,15 @@ export default function Home() {
       <div className="bg-mareesh text-white text-xs py-1.5">
         <div className="max-w-7xl mx-auto px-4 flex justify-between items-center">
           <span>🚚 شحن مجاني للطلبات فوق {settings.free_shipping_threshold || '5000'} ر.ي</span>
-          <span className="hidden sm:inline">📞 {settings.store_phone || '+967700000000'}</span>
+          <div className="flex items-center gap-3">
+            <span className="hidden sm:inline">📞 {settings.store_phone || '+967700000000'}</span>
+            <button
+              onClick={() => setCurrency(currency === 'YER' ? 'USD' : 'YER')}
+              className="px-2 py-0.5 bg-white/20 rounded text-xs font-bold hover:bg-white/30 transition-colors"
+            >
+              {currency === 'YER' ? 'ر.ي' : 'USD'}
+            </button>
+          </div>
         </div>
       </div>
       {/* Main header */}
@@ -921,6 +977,88 @@ export default function Home() {
           </section>
         )}
 
+        {/* Bundles / Packages */}
+        <section className="max-w-7xl mx-auto px-4 py-12 bg-gradient-to-b from-cream to-white">
+          <div className="text-center mb-8">
+            <h2 className="text-2xl sm:text-3xl font-bold text-mareesh flex items-center justify-center gap-2">
+              <Gift className="text-gold" size={24} /> باقات هدايا مميزة
+            </h2>
+            <p className="text-muted-foreground text-sm mt-1">مجموعات خاصة بأسعار لا تُقاوم</p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {bundles.map((bundle) => {
+              const originalTotal = bundle.products.reduce((s, p) => s + p.price * p.quantity, 0);
+              const bundlePrice = Math.round(originalTotal * (1 - bundle.discount / 100));
+              return (
+                <Card key={bundle.id} className="overflow-hidden border-2 border-gold/20 hover:border-gold/50 hover:shadow-xl transition-all group">
+                  <div className="bg-gradient-to-l from-mareesh to-mareesh-dark p-4 text-white relative">
+                    <Badge className="absolute top-2 left-2 bg-red-500 text-white">-{bundle.discount}%</Badge>
+                    <h3 className="font-bold text-lg">{bundle.name}</h3>
+                    <p className="text-white/70 text-xs">{bundle.description}</p>
+                  </div>
+                  <CardContent className="p-4 space-y-3">
+                    {bundle.products.map((bp, i) => (
+                      <div key={i} className="flex items-center justify-between text-sm border-b border-dashed pb-2 last:border-0">
+                        <span className="text-muted-foreground">{bp.name} × {bp.quantity}</span>
+                        <span className="font-medium">{formatPriceCurrency(bp.price * bp.quantity)}</span>
+                      </div>
+                    ))}
+                    <Separator />
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <span className="text-xs text-muted-foreground line-through">{formatPriceCurrency(originalTotal)}</span>
+                        <span className="text-lg font-bold text-mareesh mr-2">{formatPriceCurrency(bundlePrice)}</span>
+                      </div>
+                      <Button size="sm" className="bg-gold hover:bg-gold-light text-mareesh-dark font-bold rounded-full"
+                        onClick={() => {
+                          bundle.products.forEach(bp => {
+                            setCart(prev => [...prev, {
+                              productId: bp.productId || 'bundle-' + bundle.id + '-' + i,
+                              name: bp.name, price: Math.round(bp.price * (1 - bundle.discount / 100)),
+                              image: bp.image || '', quantity: bp.quantity, stock: 99, maxStock: 99
+                            }]);
+                          });
+                          showNotification(`تمت إضافة باقة "${bundle.name}" للسلة`, 'success');
+                        }}>
+                        اشتري الآن
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        </section>
+
+        {/* Brands */}
+        <section className="max-w-7xl mx-auto px-4 py-12">
+          <div className="text-center mb-8">
+            <h2 className="text-2xl sm:text-3xl font-bold text-mareesh flex items-center justify-center gap-2">
+              <Crown className="text-gold" size={24} /> علاماتنا التجارية
+            </h2>
+            <p className="text-muted-foreground text-sm mt-1">أفضل الماركات العالمية والمحلية</p>
+          </div>
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-4">
+            {[...new Set(products.filter(p => p.brand).map(p => p.brand))].slice(0, 6).map((brand, idx) => (
+              <button key={idx} onClick={() => { setSearchQuery(brand || ''); setView('shop'); }}
+                className="flex flex-col items-center justify-center p-4 bg-white rounded-xl border border-gold/10 hover:border-gold/40 hover:shadow-md transition-all">
+                <Store size={24} className="text-gold mb-2" />
+                <span className="text-sm font-medium text-mareesh">{brand}</span>
+              </button>
+            ))}
+            {products.filter(p => p.brand).length === 0 && (
+              <>
+                {['أديداس', 'نايكي', 'زارا', 'إتش آند إم', 'بيير كاردان', 'شي إن'].map((brand, idx) => (
+                  <div key={idx} className="flex flex-col items-center justify-center p-4 bg-white rounded-xl border border-gold/10 hover:border-gold/40 hover:shadow-md transition-all">
+                    <Store size={24} className="text-gold mb-2" />
+                    <span className="text-sm font-medium text-mareesh">{brand}</span>
+                  </div>
+                ))}
+              </>
+            )}
+          </div>
+        </section>
+
         {/* Trust Badges */}
         <section className="max-w-7xl mx-auto px-4 py-12">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
@@ -972,30 +1110,41 @@ export default function Home() {
           </div>
           {/* Badges */}
           <div className="absolute top-2 right-2 flex flex-col gap-1">
-            {discount > 0 && <Badge className="bg-red-500 text-white text-xs">-{discount}%</Badge>}
-            {product.isNew && <Badge className="bg-emerald-500 text-white text-xs">جديد</Badge>}
-            {product.isBestseller && <Badge className="bg-gold text-mareesh-dark text-xs">الأكثر مبيعاً</Badge>}
+            {product.stock === 0 && <Badge className="bg-gray-700 text-white text-xs">إنتهى من المخزن</Badge>}
+            {discount > 0 && product.stock > 0 && <Badge className="bg-red-500 text-white text-xs">-{discount}%</Badge>}
+            {product.isNew && product.stock > 0 && <Badge className="bg-emerald-500 text-white text-xs">جديد</Badge>}
+            {product.isBestseller && product.stock > 0 && <Badge className="bg-gold text-mareesh-dark text-xs">الأكثر مبيعاً</Badge>}
           </div>
+          {/* Out of stock overlay */}
+          {product.stock === 0 && <div className="absolute inset-0 bg-black/30 z-10" />}
           {/* Wishlist */}
           <button onClick={(e) => { e.stopPropagation(); setWishlist(prev => prev.includes(product.id) ? prev.filter(x => x !== product.id) : [...prev, product.id]); }}
             className="absolute top-2 left-2 bg-white/80 backdrop-blur-sm rounded-full p-1.5 hover:bg-white transition-all">
             <Heart size={16} className={isWished ? 'fill-red-500 text-red-500' : 'text-gray-400'} />
           </button>
-          {/* Quick add */}
-          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-3 translate-y-full group-hover:translate-y-0 transition-transform duration-300">
-            <Button size="sm" className="w-full bg-gold hover:bg-gold-light text-mareesh-dark font-bold rounded-full"
-              onClick={(e) => { e.stopPropagation(); addToCart(product); }}>
-              <ShoppingCart size={14} className="ml-1" /> أضف للسلة
-            </Button>
-          </div>
+          {/* Quick add / Buy Now */}
+          {product.stock > 0 ? (
+            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-3 translate-y-full group-hover:translate-y-0 transition-transform duration-300">
+              <div className="flex gap-2">
+                <Button size="sm" className="flex-1 bg-gold hover:bg-gold-light text-mareesh-dark font-bold rounded-full text-xs"
+                  onClick={(e) => { e.stopPropagation(); addToCart(product); }}>
+                  <ShoppingCart size={12} className="ml-1" /> أضف للسلة
+                </Button>
+                <Button size="sm" className="flex-1 bg-mareesh hover:bg-mareesh-dark text-white font-bold rounded-full text-xs"
+                  onClick={(e) => { e.stopPropagation(); addToCart(product); setView('cart'); }}>
+                  اشتري الآن
+                </Button>
+              </div>
+            </div>
+          ) : null}
         </div>
         <CardContent className="p-3 md:p-4">
           <p className="text-xs text-muted-foreground mb-1">{product.category?.name}</p>
           <h3 className="font-semibold text-sm mb-2 line-clamp-1">{product.name}</h3>
           <div className="flex items-center gap-2">
-            <span className="font-bold text-mareesh">{formatPrice(product.price)}</span>
+            <span className={`font-bold ${product.stock === 0 ? 'text-gray-400' : 'text-mareesh'}`}>{formatPriceCurrency(product.price)}</span>
             {product.comparePrice && (
-              <span className="text-xs text-muted-foreground line-through">{formatPrice(product.comparePrice)}</span>
+              <span className="text-xs text-muted-foreground line-through">{formatPriceCurrency(product.comparePrice)}</span>
             )}
           </div>
           <div className="flex items-center gap-1 mt-2">
@@ -1494,6 +1643,15 @@ export default function Home() {
                   إتمام الشراء
                 </Button>
                 <Button variant="outline" onClick={() => goToShop()} className="w-full">متابعة التسوق</Button>
+                {/* Share cart via WhatsApp */}
+                <Button variant="outline" className="w-full border-green-400 text-green-600 hover:bg-green-50 flex items-center gap-2"
+                  onClick={() => {
+                    const items = cart.map((c: CartItemType) => `${c.name} × ${c.quantity} = ${formatPrice(c.price * c.quantity)}`).join('\n');
+                    const msg = `🛒 سلة التسوق - المريش شوب\n\n${items}\n\nالمجموع: ${formatPrice(cartTotal)}\n\nأريد تأكيد الطلب`;
+                    window.open(`https://wa.me/${settings.store_phone?.replace(/[^0-9]/g, '') || '967700000000'}?text=${encodeURIComponent(msg)}`, '_blank');
+                  }}>
+                  <MessageCircle size={16} /> مشاركة عبر واتساب
+                </Button>
                 {/* Trust badges */}
                 <div className="grid grid-cols-2 gap-2 mt-2">
                   <div className="flex items-center gap-2 p-2 bg-green-50 rounded-lg text-xs"><Truck size={16} className="text-green-600 shrink-0" /><span className="text-green-700">توصيل سريع</span></div>
@@ -2364,6 +2522,20 @@ export default function Home() {
               ].map((link, idx) => (
                 <button key={idx} onClick={link.action} className="block text-sm text-[#F5E6D3]/70 hover:text-gold transition-colors">{link.label}</button>
               ))}
+            </div>
+            {/* App Download */}
+            <div className="mt-4">
+              <h5 className="text-sm font-semibold text-gold mb-2">حمّل تطبيقنا</h5>
+              <div className="flex flex-col gap-2">
+                <a href="https://play.google.com/store" target="_blank" rel="noopener noreferrer"
+                  className="flex items-center gap-2 bg-[#3D2B24] hover:bg-[#4D3B34] rounded-lg p-2 transition-colors">
+                  <div className="w-8 h-8 bg-white rounded flex items-center justify-center text-xl">▶</div>
+                  <div className="text-xs">
+                    <div className="text-[#F5E6D3]/50">GET IT ON</div>
+                    <div className="font-medium">Google Play</div>
+                  </div>
+                </a>
+              </div>
             </div>
           </div>
           {/* Contact */}
