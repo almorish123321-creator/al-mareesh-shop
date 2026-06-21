@@ -597,6 +597,23 @@ export default function Home() {
     } catch { showNotification('خطأ في حذف الفئة', 'error'); }
   };
 
+  /* ─── CATEGORY IMAGE UPLOAD ─── */
+  const [uploadingCatImage, setUploadingCatImage] = useState(false);
+  const handleCategoryImageUpload = async (file: File) => {
+    if (!file) return;
+    setUploadingCatImage(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await fetch('/api/upload', { method: 'POST', body: formData });
+      const data = await res.json();
+      if (data.error) { showNotification(data.error, 'error'); return; }
+      setEditCategory({ ...editCategory!, image: data.url });
+      showNotification('تم رفع صورة القسم بنجاح', 'success');
+    } catch { showNotification('خطأ في رفع الصورة', 'error'); }
+    finally { setUploadingCatImage(false); }
+  };
+
   /* ─── ADMIN ORDER STATUS ─── */
   const updateOrderStatus = async (orderId: string, status: string) => {
     try {
@@ -863,13 +880,7 @@ export default function Home() {
     const featuredProducts = products.filter(p => p.isFeatured).slice(0, 8);
     const bestsellerProducts = products.filter(p => p.isBestseller).slice(0, 8);
     const newProducts = products.filter(p => p.isNew).slice(0, 8);
-    const mainCategories = categories.filter(c => !c.parentId).slice(0, 3);
-
-    const categoryIcons: Record<string, React.ReactNode> = {
-      'kids-clothing': <Baby size={32} />,
-      'women-clothing': <Shirt size={32} />,
-      'shoes': <Footprints size={32} />,
-    };
+    const allCategories = categories.filter(c => !c.parentId);
     const categoryColors: Record<string, string> = {
       'kids-clothing': 'from-pink-400 to-rose-500',
       'women-clothing': 'from-mareesh to-mareesh-light',
@@ -919,25 +930,29 @@ export default function Home() {
           </div>
         )}
 
-        {/* Categories */}
-        <section className="max-w-7xl mx-auto px-4 py-12">
-          <div className="text-center mb-8">
+        {/* Categories - Circular Design */}
+        <section className="max-w-7xl mx-auto px-4 py-10">
+          <div className="text-center mb-6">
             <h2 className="text-2xl sm:text-3xl font-bold text-mareesh mb-2">تسوق حسب القسم</h2>
-            <p className="text-muted-foreground">اكتشف تشكيلاتنا المميزة</p>
+            <p className="text-muted-foreground text-sm">اكتشف تشكيلاتنا المميزة</p>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-            {mainCategories.map((cat) => (
+          <div className="flex flex-wrap justify-center gap-4 sm:gap-6">
+            {allCategories.map((cat) => (
               <button key={cat.id} onClick={() => goToShop(cat.slug)}
-                className="group relative overflow-hidden rounded-2xl h-56 shadow-lg">
-                <div className={`absolute inset-0 bg-gradient-to-br ${categoryColors[cat.slug] || 'from-mareesh to-mareesh-light'} transition-transform duration-500 group-hover:scale-110`} />
-                <div className="absolute inset-0 flex flex-col items-center justify-center text-white p-6">
-                  <div className="mb-3 opacity-80 group-hover:opacity-100 transition-opacity">{categoryIcons[cat.slug] || <ShoppingBag size={32} />}</div>
-                  <h3 className="text-xl font-bold mb-1">{cat.name}</h3>
-                  <p className="text-white/80 text-sm mb-3">{cat._count?.products || 0} منتج</p>
-                  <span className="text-gold font-medium text-sm flex items-center gap-1 group-hover:gap-2 transition-all">
-                    تسوق الآن <ArrowLeft size={14} />
-                  </span>
+                className="group flex flex-col items-center gap-2 transition-transform hover:scale-105">
+                <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-full overflow-hidden border-2 border-mareesh/20 shadow-md group-hover:shadow-lg group-hover:border-gold transition-all">
+                  {cat.image ? (
+                    <>
+                      <img src={cat.image} alt={cat.name} className="w-full h-full object-cover" />
+                      <div className="absolute inset-0 bg-mareesh-dark/30 group-hover:bg-mareesh-dark/10 transition-colors" />
+                    </>
+                  ) : (
+                    <div className={`w-full h-full bg-gradient-to-br ${categoryColors[cat.slug] || 'from-mareesh to-mareesh-light'} flex items-center justify-center`}>
+                      <ShoppingBag size={24} className="text-white" />
+                    </div>
+                  )}
                 </div>
+                <span className="text-xs sm:text-sm font-medium text-mareesh group-hover:text-gold transition-colors text-center leading-tight max-w-[80px] sm:max-w-[100px]">{cat.name}</span>
               </button>
             ))}
           </div>
@@ -2863,6 +2878,25 @@ export default function Home() {
           </div>
           <div><Label>الرابط (Slug)</Label><Input value={editCategory?.slug || ''} onChange={(e) => setEditCategory({ ...editCategory, slug: e.target.value })} /></div>
           <div><Label>الوصف</Label><Textarea value={editCategory?.description || ''} onChange={(e) => setEditCategory({ ...editCategory, description: e.target.value })} /></div>
+          {/* صورة القسم */}
+          <div>
+            <Label>صورة القسم (خلفية الدائرة)</Label>
+            <div className="mt-2 flex items-center gap-4">
+              {editCategory?.image ? (
+                <div className="relative w-20 h-20 rounded-full overflow-hidden border-2 border-mareesh/30">
+                  <img src={editCategory.image} alt="صورة القسم" className="w-full h-full object-cover" />
+                  <button onClick={() => setEditCategory({ ...editCategory!, image: '' })} className="absolute top-0 right-0 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-600"><X size={10} /></button>
+                </div>
+              ) : (
+                <label className={`w-20 h-20 border-2 border-dashed border-gray-300 rounded-full flex flex-col items-center justify-center cursor-pointer hover:border-mareesh/50 transition-colors ${uploadingCatImage ? 'opacity-50' : ''}`}>
+                  <Plus size={20} className="text-gray-400" />
+                  <span className="text-[10px] text-gray-400 mt-0.5">رفع صورة</span>
+                  <input type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && handleCategoryImageUpload(e.target.files[0])} disabled={uploadingCatImage} />
+                </label>
+              )}
+              {uploadingCatImage && <span className="text-xs text-mareesh animate-pulse">جاري الرفع...</span>}
+            </div>
+          </div>
           <div><Label>الترتيب</Label><Input type="number" value={editCategory?.sortOrder || 0} onChange={(e) => setEditCategory({ ...editCategory, sortOrder: Number(e.target.value) })} /></div>
         </div>
         <DialogFooter>
