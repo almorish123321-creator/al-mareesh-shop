@@ -143,7 +143,7 @@ function StarRating({ rating, size = 16, onChange }: { rating: number; size?: nu
 // تم نقله داخل المكون الرئيسي لتجنب خطأ React #310
 
 /* ─── MAIN APP ─── */
-export default function Home({ autoAdmin }: { autoAdmin?: boolean } = {}) {
+export default function Home() {
   const store = useAppStore();
   const {
     view, setView, selectedProductId, setSelectedProduct, selectedCategory,
@@ -336,19 +336,7 @@ export default function Home({ autoAdmin }: { autoAdmin?: boolean } = {}) {
 
   useEffect(() => { fetchAdminData(); }, [fetchAdminData]);
 
-  /* ─── AUTO ADMIN MODE ─── */
-  useEffect(() => {
-    if (autoAdmin) {
-      if (user?.role === 'admin') {
-        setView('admin');
-        setAdminTab('dashboard');
-      } else if (user === null) {
-        // Not logged in - show login modal
-        setShowAuthModal(true);
-        setAuthMode('login');
-      }
-    }
-  }, [autoAdmin, user, setView, setAdminTab, setShowAuthModal, setAuthMode]);
+
 
   /* ─── SCROLL HEADER ─── */
   useEffect(() => {

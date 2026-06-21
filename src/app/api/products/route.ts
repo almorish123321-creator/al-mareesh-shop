@@ -20,10 +20,10 @@ export async function GET(request: NextRequest) {
     }
     if (search) {
       where.OR = [
-        { name: { contains: search, mode: 'insensitive' } },
-        { nameEn: { contains: search, mode: 'insensitive' } },
-        { description: { contains: search, mode: 'insensitive' } },
-        { sku: { contains: search, mode: 'insensitive' } },
+        { name: { contains: search } },
+        { nameEn: { contains: search } },
+        { description: { contains: search } },
+        { sku: { contains: search } },
       ];
     }
     if (featured === 'true') where.isFeatured = true;
