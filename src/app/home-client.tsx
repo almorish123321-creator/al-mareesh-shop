@@ -2574,8 +2574,8 @@ export default function Home() {
             </div>
             <div><Label>الوصف</Label><Textarea value={editProduct?.description || ''} onChange={(e) => setEditProduct({ ...editProduct, description: e.target.value })} /></div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div><Label>السعر (ر.ي)</Label><Input type="number" value={editProduct?.price || 0} onChange={(e) => setEditProduct({ ...editProduct, price: Number(e.target.value) })} placeholder="السعر بالريال اليمني" /></div>
-              <div><Label>سعر المقارنة (ر.ي)</Label><Input type="number" value={editProduct?.comparePrice || 0} onChange={(e) => setEditProduct({ ...editProduct, comparePrice: Number(e.target.value) })} /></div>
+              <div><Label>السعر (ر.ي) *</Label><Input type="number" value={editProduct?.price || 0} onChange={(e) => setEditProduct({ ...editProduct, price: Number(e.target.value) })} placeholder="سعر البيع" /></div>
+              <div><Label>السعر قبل الخصم (ر.ي)</Label><Input type="number" value={editProduct?.comparePrice || ''} onChange={(e) => setEditProduct({ ...editProduct, comparePrice: e.target.value ? Number(e.target.value) : undefined })} placeholder="اتركه فارغ = بدون خصم" /></div>
               <div><Label>المخزون</Label><Input type="number" value={editProduct?.stock || 0} onChange={(e) => setEditProduct({ ...editProduct, stock: Number(e.target.value) })} /></div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
