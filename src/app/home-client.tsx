@@ -1095,7 +1095,20 @@ export default function Home() {
             <div className="flex gap-2 max-w-md mx-auto">
               <Input placeholder="بريدك الإلكتروني" value={subscriberEmail} onChange={(e) => setSubscriberEmail(e.target.value)}
                 className="bg-white/10 border-white/20 text-white placeholder:text-white/50 h-11 rounded-full" />
-              <Button onClick={() => { showNotification('تم الاشتراك بنجاح!', 'success'); setSubscriberEmail(''); }}
+              <Button onClick={async () => {
+              if (!subscriberEmail) return;
+              try {
+                const res = await fetch('/api/subscribers', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ email: subscriberEmail }),
+                });
+                const data = await res.json();
+                if (data.error) { showNotification(data.error, 'error'); return; }
+                showNotification('تم الاشتراك بنجاح!', 'success');
+                setSubscriberEmail('');
+              } catch { showNotification('خطأ في الاشتراك', 'error'); }
+            }}
                 className="bg-gold hover:bg-gold-light text-mareesh-dark font-bold px-6 rounded-full shrink-0">
                 اشتراك
               </Button>
@@ -1918,7 +1931,22 @@ export default function Home() {
             <div><Label>البريد الإلكتروني</Label><Input type="email" value={contactForm.email} onChange={(e) => setContactForm({ ...contactForm, email: e.target.value })} /></div>
             <div><Label>الموضوع</Label><Input value={contactForm.subject} onChange={(e) => setContactForm({ ...contactForm, subject: e.target.value })} /></div>
             <div><Label>الرسالة</Label><Textarea value={contactForm.message} onChange={(e) => setContactForm({ ...contactForm, message: e.target.value })} rows={4} /></div>
-            <Button onClick={() => { showNotification('تم إرسال رسالتك بنجاح!', 'success'); setContactForm({ name: '', email: '', subject: '', message: '' }); }}
+            <Button onClick={async () => {
+              if (!contactForm.name || !contactForm.email || !contactForm.message) {
+                showNotification('يرجى ملء الحقول المطلوبة', 'error'); return;
+              }
+              try {
+                const res = await fetch('/api/contact', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify(contactForm),
+                });
+                const data = await res.json();
+                if (data.error) { showNotification(data.error, 'error'); return; }
+                showNotification('تم إرسال رسالتك بنجاح!', 'success');
+                setContactForm({ name: '', email: '', subject: '', message: '' });
+              } catch { showNotification('خطأ في إرسال الرسالة', 'error'); }
+            }}
               className="w-full bg-mareesh hover:bg-mareesh-dark">إرسال</Button>
           </CardContent>
         </Card>
