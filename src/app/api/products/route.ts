@@ -52,24 +52,69 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const data = await request.json();
-    const { _count, createdAt, updatedAt, category, ...createData } = data;
-    const product = await db.product.create({ data: { ...createData, isActive: createData.isActive ?? true } });
+    const { _count, createdAt, updatedAt, category, ...rawData } = data;
+
+    // Clean up data - remove undefined/empty optional fields
+    const createData: any = { ...rawData, isActive: rawData.isActive ?? true };
+
+    // Ensure required string fields have values
+    if (!createData.name || !createData.name.trim()) {
+      return Response.json({ error: 'اسم المنتج مطلوب' }, { status: 400 });
+    }
+    if (!createData.categoryId) {
+      return Response.json({ error: 'الفئة مطلوبة' }, { status: 400 });
+    }
+
+    // Auto-generate slug if missing
+    if (!createData.slug) {
+      const baseSlug = createData.nameEn || createData.name;
+      createData.slug = baseSlug.toLowerCase().replace(/[^a-z0-9\u0600-\u06FF]/g, '-').replace(/-+/g, '-').substring(0, 60) + '-' + Date.now().toString(36);
+    }
+    // Auto-generate SKU if missing
+    if (!createData.sku) {
+      createData.sku = 'SKU-' + Date.now().toString(36);
+    }
+    // Auto-fill nameEn
+    if (!createData.nameEn) {
+      createData.nameEn = createData.name;
+    }
+    // Clean comparePrice
+    if (!createData.comparePrice || createData.comparePrice === 0) {
+      createData.comparePrice = null;
+    }
+    // Ensure price is a number
+    createData.price = Number(createData.price) || 0;
+
+    const product = await db.product.create({ data: createData });
     return Response.json(product);
-  } catch (error) {
+  } catch (error: any) {
     console.error('Product POST error:', error);
-    return Response.json({ error: 'خطأ في إنشاء المنتج' }, { status: 500 });
+    if (error.code === 'P2002') {
+      return Response.json({ error: 'رمز SKU أو الرابط مستخدم بالفعل - استخدم رمز مختلف' }, { status: 400 });
+    }
+    return Response.json({ error: 'خطأ في إنشاء المنتج: ' + (error.message || '') }, { status: 500 });
   }
 }
 
 export async function PUT(request: NextRequest) {
   try {
     const data = await request.json();
-    const { id, _count, createdAt, updatedAt, category, ...updateData } = data;
+    const { id, _count, createdAt, updatedAt, category, ...rawData } = data;
     if (!id) return Response.json({ error: 'معرف المنتج مطلوب' }, { status: 400 });
+
+    const updateData: any = { ...rawData };
+    // Clean comparePrice
+    if (!updateData.comparePrice || updateData.comparePrice === 0) {
+      updateData.comparePrice = null;
+    }
+
     const product = await db.product.update({ where: { id }, data: updateData });
     return Response.json(product);
-  } catch (error) {
+  } catch (error: any) {
     console.error('Product PUT error:', error);
+    if (error.code === 'P2002') {
+      return Response.json({ error: 'رمز SKU أو الرابط مستخدم بالفعل' }, { status: 400 });
+    }
     return Response.json({ error: 'خطأ في تحديث المنتج' }, { status: 500 });
   }
 }

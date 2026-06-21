@@ -539,21 +539,68 @@ export default function Home() {
   const currentProduct = products.find((p) => p.id === selectedProductId);
 
   /* ─── ADMIN PRODUCT CRUD ─── */
+  const generateSlug = (name: string) => {
+    return name
+      .trim()
+      .toLowerCase()
+      .replace(/[أإآا]/g, 'a').replace(/[ب]/g, 'b').replace(/[ت]/g, 't').replace(/[ث]/g, 'th')
+      .replace(/[ج]/g, 'j').replace(/[ح]/g, 'h').replace(/[خ]/g, 'kh').replace(/[د]/g, 'd')
+      .replace(/[ذ]/g, 'dh').replace(/[ر]/g, 'r').replace(/[ز]/g, 'z').replace(/[س]/g, 's')
+      .replace(/[ش]/g, 'sh').replace(/[ص]/g, 's').replace(/[ض]/g, 'd').replace(/[ط]/g, 't')
+      .replace(/[ظ]/g, 'z').replace(/[ع]/g, 'a').replace(/[غ]/g, 'gh').replace(/[ف]/g, 'f')
+      .replace(/[ق]/g, 'q').replace(/[ك]/g, 'k').replace(/[ل]/g, 'l').replace(/[م]/g, 'm')
+      .replace(/[ن]/g, 'n').replace(/[ه]/g, 'h').replace(/[و]/g, 'w').replace(/[ي]/g, 'y')
+      .replace(/[ة]/g, 'h').replace(/[ى]/g, 'a').replace(/[ئ]/g, 'y').replace(/[ؤ]/g, 'o')
+      .replace(/[^a-z0-9\s-]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-')
+      .substring(0, 80);
+  };
+
   const saveProduct = async () => {
     if (!editProduct) return;
     try {
-      const method = editProduct.id ? 'PUT' : 'POST';
+      // Auto-generate slug if empty
+      const productData = { ...editProduct };
+      if (!productData.slug && productData.name) {
+        productData.slug = generateSlug(productData.name) + '-' + Date.now().toString(36);
+      }
+      // Auto-fill nameEn if empty
+      if (!productData.nameEn && productData.name) {
+        productData.nameEn = productData.name;
+      }
+      // Fix comparePrice: 0 should be undefined (no discount)
+      if (!productData.comparePrice || productData.comparePrice === 0) {
+        productData.comparePrice = undefined;
+      }
+      // Validate required fields
+      if (!productData.name || !productData.price || !productData.categoryId) {
+        showNotification('يرجى ملء الحقول المطلوبة: الاسم، السعر، الفئة', 'error');
+        return;
+      }
+      if (!productData.sku) {
+        productData.sku = 'SKU-' + Date.now().toString(36);
+      }
+
+      const method = productData.id ? 'PUT' : 'POST';
       const res = await fetch('/api/products', {
         method, headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(editProduct),
+        body: JSON.stringify(productData),
       });
       if (res.ok) {
-        showNotification(editProduct.id ? 'تم تحديث المنتج' : 'تم إضافة المنتج', 'success');
+        showNotification(productData.id ? 'تم تحديث المنتج' : 'تم إضافة المنتج', 'success');
         setShowProductModal(false);
         setEditProduct(null);
         seedAndFetch();
+      } else {
+        const errorData = await res.json().catch(() => ({}));
+        console.error('Product save error:', errorData);
+        showNotification(errorData.error || 'خطأ في حفظ المنتج - تحقق من البيانات', 'error');
       }
-    } catch { showNotification('خطأ في حفظ المنتج', 'error'); }
+    } catch (err) {
+      console.error('Product save exception:', err);
+      showNotification('خطأ في حفظ المنتج', 'error');
+    }
   };
 
   const deleteProduct = async (id: string) => {
@@ -2244,7 +2291,7 @@ export default function Home() {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <h2 className="text-xl font-bold text-mareesh">المنتجات</h2>
-                <Button onClick={() => { setEditProduct({ name: '', nameEn: '', slug: '', description: '', price: 0, comparePrice: 0, sku: '', stock: 0, images: '[]', categoryId: categories[0]?.id || '', sizes: '[]', colors: '[]', isActive: true, showDiscount: false }); setShowProductModal(true); }}
+                <Button onClick={() => { setEditProduct({ name: '', nameEn: '', slug: '', description: '', price: 0, comparePrice: undefined, sku: '', stock: 0, images: '[]', categoryId: categories[0]?.id || '', sizes: '[]', colors: '[]', isActive: true, showDiscount: false }); setShowProductModal(true); }}
                   className="bg-gold hover:bg-gold-light text-white">
                   <Plus size={16} className="ml-1" /> إضافة منتج
                 </Button>
@@ -2868,17 +2915,17 @@ export default function Home() {
           </DialogHeader>
           <div className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div><Label>الاسم بالعربي</Label><Input value={editProduct?.name || ''} onChange={(e) => setEditProduct({ ...editProduct, name: e.target.value })} /></div>
-              <div><Label>الاسم بالإنجليزي</Label><Input value={editProduct?.nameEn || ''} onChange={(e) => setEditProduct({ ...editProduct, nameEn: e.target.value })} /></div>
+              <div><Label>الاسم بالعربي *</Label><Input value={editProduct?.name || ''} onChange={(e) => setEditProduct({ ...editProduct, name: e.target.value })} placeholder="مطلوب" className={!editProduct?.name ? 'border-red-300' : ''} /></div>
+              <div><Label>الاسم بالإنجليزي</Label><Input value={editProduct?.nameEn || ''} onChange={(e) => setEditProduct({ ...editProduct, nameEn: e.target.value })} placeholder="اختياري - يُملأ تلقائياً" /></div>
             </div>
-            <div><Label>الوصف</Label><Textarea value={editProduct?.description || ''} onChange={(e) => setEditProduct({ ...editProduct, description: e.target.value })} /></div>
+            <div><Label>الوصف *</Label><Textarea value={editProduct?.description || ''} onChange={(e) => setEditProduct({ ...editProduct, description: e.target.value })} placeholder="وصف المنتج" /></div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div><Label>السعر (ر.س) *</Label><Input type="number" value={editProduct?.price || 0} onChange={(e) => setEditProduct({ ...editProduct, price: Number(e.target.value) })} placeholder="سعر البيع" /></div>
+              <div><Label>السعر (ر.س) *</Label><Input type="number" value={editProduct?.price || ''} onChange={(e) => setEditProduct({ ...editProduct, price: Number(e.target.value) })} placeholder="سعر البيع" /></div>
               <div><Label>السعر قبل الخصم (ر.س)</Label><Input type="number" value={editProduct?.comparePrice || ''} onChange={(e) => setEditProduct({ ...editProduct, comparePrice: e.target.value ? Number(e.target.value) : undefined })} placeholder="اتركه فارغ = بدون خصم" /></div>
               <div><Label>المخزون</Label><Input type="number" value={editProduct?.stock || 0} onChange={(e) => setEditProduct({ ...editProduct, stock: Number(e.target.value) })} /></div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div><Label>SKU</Label><Input value={editProduct?.sku || ''} onChange={(e) => setEditProduct({ ...editProduct, sku: e.target.value })} /></div>
+              <div><Label>SKU (اختياري - يُولّد تلقائياً)</Label><Input value={editProduct?.sku || ''} onChange={(e) => setEditProduct({ ...editProduct, sku: e.target.value })} placeholder="تلقائي" /></div>
               <div>
                 <Label>الفئة</Label>
                 <Select value={editProduct?.categoryId || ''} onValueChange={(v) => setEditProduct({ ...editProduct, categoryId: v })}>
