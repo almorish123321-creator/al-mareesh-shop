@@ -41,48 +41,48 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
-  --color-mareesh: #8B1A4A;
-  --color-mareesh-light: #A8325F;
-  --color-mareesh-dark: #6B1238;
-  --color-gold: #D4A853;
-  --color-gold-light: #E8C97A;
-  --color-cream: #FFF9F5;
-  --color-cream-dark: #F5E6D3;
+  --color-mareesh: #1B3A5C;
+  --color-mareesh-light: #2A5580;
+  --color-mareesh-dark: #0F2540;
+  --color-gold: #FF8F00;
+  --color-gold-light: #FFA733;
+  --color-cream: #FFFBF5;
+  --color-cream-dark: #FFF0E0;
 }
 
 :root {
   --radius: 0.625rem;
-  --background: #FFF9F5;
-  --foreground: #2D1B14;
+  --background: #FFFBF5;
+  --foreground: #1A1A2E;
   --card: #FFFFFF;
-  --card-foreground: #2D1B14;
+  --card-foreground: #1A1A2E;
   --popover: #FFFFFF;
-  --popover-foreground: #2D1B14;
-  --primary: #8B1A4A;
+  --popover-foreground: #1A1A2E;
+  --primary: #1B3A5C;
   --primary-foreground: #FFFFFF;
-  --secondary: #F5E6D3;
-  --secondary-foreground: #2D1B14;
-  --muted: #F5E6D3;
-  --muted-foreground: #8B7355;
-  --accent: #D4A853;
-  --accent-foreground: #2D1B14;
-  --destructive: #DC2626;
-  --border: #E8D5C4;
-  --input: #E8D5C4;
-  --ring: #8B1A4A;
-  --chart-1: #8B1A4A;
-  --chart-2: #D4A853;
+  --secondary: #FFF0E0;
+  --secondary-foreground: #1A1A2E;
+  --muted: #FFF0E0;
+  --muted-foreground: #5A6B7F;
+  --accent: #FF8F00;
+  --accent-foreground: #1A1A2E;
+  --destructive: #FF4B3A;
+  --border: #E8E0D8;
+  --input: #E8E0D8;
+  --ring: #1B3A5C;
+  --chart-1: #1B3A5C;
+  --chart-2: #FF8F00;
   --chart-3: #2E8B57;
-  --chart-4: #4169E1;
-  --chart-5: #FF69B4;
-  --sidebar: #2D1B14;
-  --sidebar-foreground: #F5E6D3;
-  --sidebar-primary: #D4A853;
-  --sidebar-primary-foreground: #2D1B14;
-  --sidebar-accent: #3D2B24;
-  --sidebar-accent-foreground: #F5E6D3;
-  --sidebar-border: #4D3B34;
-  --sidebar-ring: #D4A853;
+  --chart-4: #3085D6;
+  --chart-5: #FF4B3A;
+  --sidebar: #0F2540;
+  --sidebar-foreground: #F0E8E0;
+  --sidebar-primary: #FF8F00;
+  --sidebar-primary-foreground: #0F2540;
+  --sidebar-accent: #1B3A5C;
+  --sidebar-accent-foreground: #F0E8E0;
+  --sidebar-border: #2A5580;
+  --sidebar-ring: #FF8F00;
 }
 
 @layer base {
@@ -105,15 +105,15 @@
   height: 8px;
 }
 ::-webkit-scrollbar-track {
-  background: #F5E6D3;
+  background: #FFF0E0;
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb {
-  background: #D4A853;
+  background: #FF8F00;
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #8B1A4A;
+  background: #1B3A5C;
 }
 
 /* Smooth transitions */
@@ -133,8 +133,8 @@
   to { opacity: 1; transform: translateX(0); }
 }
 @keyframes pulse-gold {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(212, 168, 83, 0.4); }
-  50% { box-shadow: 0 0 0 10px rgba(212, 168, 83, 0); }
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 143, 0, 0.4); }
+  50% { box-shadow: 0 0 0 10px rgba(255, 143, 0, 0); }
 }
 
 .animate-fade-in {
@@ -150,7 +150,7 @@
 /* Product card hover */
 .product-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 12px 24px rgba(139, 26, 74, 0.12);
+  box-shadow: 0 12px 28px rgba(27, 58, 92, 0.15);
 }
 .product-card {
   transition: all 0.3s ease;
