@@ -260,6 +260,11 @@ export default function Home() {
   const [trackResult, setTrackResult] = useState<OrderType | null>(null);
   const [showTrackModal, setShowTrackModal] = useState(false);
 
+  /* ─── ADMIN ORDER DETAIL ─── */
+  const [selectedOrder, setSelectedOrder] = useState<OrderType | null>(null);
+  const [showOrderDetail, setShowOrderDetail] = useState(false);
+  const [adminRefreshKey, setAdminRefreshKey] = useState(0);
+
   /* ─── IMAGE UPLOAD ─── */
   const [uploadingImage, setUploadingImage] = useState<string | null>(null);
 
@@ -314,7 +319,7 @@ export default function Home() {
     } catch (err) {
       console.error('Admin fetch error:', err);
     }
-  }, [user, products]);
+  }, [user, products, adminRefreshKey]);
 
   useEffect(() => { fetchAdminData(); }, [fetchAdminData]);
 
@@ -458,7 +463,7 @@ export default function Home() {
         couponCode: couponCode || undefined,
         items: cart.map((c: CartItemType) => ({
           productId: c.productId, name: c.name, price: c.price,
-          quantity: c.quantity, size: c.size, color: c.color, total: c.price * c.quantity,
+          quantity: c.quantity, size: c.size || undefined, color: c.color || undefined, total: c.price * c.quantity,
         })),
       };
       const res = await fetch('/api/orders', {
@@ -467,13 +472,18 @@ export default function Home() {
         body: JSON.stringify(orderData),
       });
       const order = await res.json();
+      if (order.error) {
+        showNotification(order.error + (order.details ? ` (${order.details})` : ''), 'error');
+        return;
+      }
       setPlacedOrder(order);
       setOrderPlaced(true);
       setCart([]);
       setCouponDiscount(0);
       setCouponCode('');
+      setAdminRefreshKey(k => k + 1); // Refresh admin orders
       showNotification('تم تقديم الطلب بنجاح!', 'success');
-    } catch { showNotification('خطأ في تقديم الطلب', 'error'); }
+    } catch { showNotification('خطأ في تقديم الطلب - يرجى المحاولة مرة أخرى', 'error'); }
   };
 
   /* ─── FILTERED PRODUCTS FOR SHOP ─── */
@@ -2141,29 +2151,93 @@ export default function Home() {
           {/* Orders */}
           {adminTab === 'orders' && (
             <div className="space-y-4">
-              <h2 className="text-xl font-bold text-mareesh">الطلبات</h2>
-              <Card>
-                <CardContent className="p-0">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="text-right">رقم الطلب</TableHead>
-                        <TableHead className="text-right hidden sm:table-cell">العميل</TableHead>
-                        <TableHead className="text-right">المبلغ</TableHead>
-                        <TableHead className="text-right">الحالة</TableHead>
-                        <TableHead className="text-right">تحديث</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-bold text-mareesh">الطلبات ({adminOrders.length})</h2>
+                <Button onClick={() => setAdminRefreshKey(k => k + 1)} variant="outline" size="sm" className="border-mareesh text-mareesh">
+                  <RotateCcw size={14} className="ml-1" /> تحديث
+                </Button>
+              </div>
+              {adminOrders.length === 0 ? (
+                <Card>
+                  <CardContent className="p-8 text-center text-muted-foreground">
+                    <ShoppingBag size={48} className="mx-auto mb-4 opacity-30" />
+                    <p>لا توجد طلبات بعد</p>
+                    <p className="text-sm mt-1">ستظهر الطلبات هنا عندما يقدم العملاء طلباتهم</p>
+                  </CardContent>
+                </Card>
+              ) : (
+                <Card>
+                  <CardContent className="p-0">
+                    {/* Desktop Table */}
+                    <div className="hidden md:block">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="text-right">رقم الطلب</TableHead>
+                            <TableHead className="text-right">العميل</TableHead>
+                            <TableHead className="text-right">الهاتف</TableHead>
+                            <TableHead className="text-right">المدينة</TableHead>
+                            <TableHead className="text-right">المبلغ</TableHead>
+                            <TableHead className="text-right">الدفع</TableHead>
+                            <TableHead className="text-right">الحالة</TableHead>
+                            <TableHead className="text-right">التاريخ</TableHead>
+                            <TableHead className="text-right">تحديث</TableHead>
+                            <TableHead></TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {adminOrders.map((order) => (
+                            <TableRow key={order.id} className="cursor-pointer hover:bg-mareesh/5">
+                              <TableCell className="font-mono text-sm font-bold text-mareesh">{order.orderNumber}</TableCell>
+                              <TableCell className="text-sm">{order.shippingName}</TableCell>
+                              <TableCell className="text-sm font-mono" dir="ltr">{order.shippingPhone}</TableCell>
+                              <TableCell className="text-sm">{order.shippingCity}</TableCell>
+                              <TableCell className="text-sm font-bold">{formatPrice(order.total)}</TableCell>
+                              <TableCell className="text-xs">
+                                {order.paymentMethod === 'karimi' ? 'كريمي' : order.paymentMethod === 'qutaibi' ? 'قطيبي' : order.paymentMethod === 'jeeb' ? 'جيب' : 'عند الاستلام'}
+                              </TableCell>
+                              <TableCell><Badge className={statusColors[order.status] || ''}>{statusMap[order.status] || order.status}</Badge></TableCell>
+                              <TableCell className="text-xs text-muted-foreground">{new Date(order.createdAt).toLocaleDateString('ar-YE')}</TableCell>
+                              <TableCell>
+                                <Select value={order.status} onValueChange={(v) => updateOrderStatus(order.id, v)}>
+                                  <SelectTrigger className="h-8 w-32 text-xs"><SelectValue /></SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="pending">قيد الانتظار</SelectItem>
+                                    <SelectItem value="processing">قيد المعالجة</SelectItem>
+                                    <SelectItem value="shipped">تم الشحن</SelectItem>
+                                    <SelectItem value="delivered">تم التوصيل</SelectItem>
+                                    <SelectItem value="cancelled">ملغي</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </TableCell>
+                              <TableCell>
+                                <Button variant="ghost" size="icon" className="h-8 w-8"
+                                  onClick={() => { setSelectedOrder(order); setShowOrderDetail(true); }}>
+                                  <Eye size={16} className="text-mareesh" />
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                    {/* Mobile Cards */}
+                    <div className="md:hidden divide-y">
                       {adminOrders.map((order) => (
-                        <TableRow key={order.id}>
-                          <TableCell className="font-mono text-sm">{order.orderNumber}</TableCell>
-                          <TableCell className="text-sm hidden sm:table-cell">{order.shippingName}</TableCell>
-                          <TableCell className="text-sm font-medium">{formatPrice(order.total)}</TableCell>
-                          <TableCell><Badge className={statusColors[order.status] || ''}>{statusMap[order.status] || order.status}</Badge></TableCell>
-                          <TableCell>
+                        <div key={order.id} className="p-4 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="font-mono font-bold text-mareesh text-sm">{order.orderNumber}</span>
+                            <Badge className={statusColors[order.status] || ''}>{statusMap[order.status] || order.status}</Badge>
+                          </div>
+                          <div className="text-sm space-y-1">
+                            <div className="flex justify-between"><span className="text-muted-foreground">العميل:</span><span>{order.shippingName}</span></div>
+                            <div className="flex justify-between"><span className="text-muted-foreground">الهاتف:</span><span dir="ltr">{order.shippingPhone}</span></div>
+                            <div className="flex justify-between"><span className="text-muted-foreground">المبلغ:</span><span className="font-bold">{formatPrice(order.total)}</span></div>
+                            <div className="flex justify-between"><span className="text-muted-foreground">الدفع:</span><span>{order.paymentMethod === 'karimi' ? 'كريمي' : order.paymentMethod === 'qutaibi' ? 'قطيبي' : order.paymentMethod === 'jeeb' ? 'جيب' : 'عند الاستلام'}</span></div>
+                          </div>
+                          <div className="flex gap-2 mt-2">
                             <Select value={order.status} onValueChange={(v) => updateOrderStatus(order.id, v)}>
-                              <SelectTrigger className="h-8 w-32 text-xs"><SelectValue /></SelectTrigger>
+                              <SelectTrigger className="h-8 flex-1 text-xs"><SelectValue /></SelectTrigger>
                               <SelectContent>
                                 <SelectItem value="pending">قيد الانتظار</SelectItem>
                                 <SelectItem value="processing">قيد المعالجة</SelectItem>
@@ -2172,13 +2246,17 @@ export default function Home() {
                                 <SelectItem value="cancelled">ملغي</SelectItem>
                               </SelectContent>
                             </Select>
-                          </TableCell>
-                        </TableRow>
+                            <Button variant="outline" size="sm" className="h-8 border-mareesh text-mareesh"
+                              onClick={() => { setSelectedOrder(order); setShowOrderDetail(true); }}>
+                              <Eye size={14} className="ml-1" /> التفاصيل
+                            </Button>
+                          </div>
+                        </div>
                       ))}
-                    </TableBody>
-                  </Table>
-                </CardContent>
-              </Card>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
             </div>
           )}
 
@@ -2457,6 +2535,100 @@ export default function Home() {
     </Dialog>
   );
 
+  /* ─── ORDER DETAIL MODAL ─── */
+  const OrderDetailModal = () => (
+    <Dialog open={showOrderDetail} onOpenChange={setShowOrderDetail}>
+      <DialogContent className="sm:max-w-lg max-h-[85vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <ShoppingBag size={20} className="text-mareesh" /> تفاصيل الطلب
+          </DialogTitle>
+        </DialogHeader>
+        {selectedOrder && (
+          <div className="space-y-4">
+            {/* Order Header */}
+            <div className="flex items-center justify-between bg-mareesh/5 p-3 rounded-xl">
+              <div>
+                <span className="font-mono font-bold text-mareesh text-lg">{selectedOrder.orderNumber}</span>
+                <div className="text-xs text-muted-foreground mt-1">{new Date(selectedOrder.createdAt).toLocaleDateString('ar-YE', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</div>
+              </div>
+              <Badge className={`${statusColors[selectedOrder.status] || ''} text-sm px-3 py-1`}>{statusMap[selectedOrder.status] || selectedOrder.status}</Badge>
+            </div>
+
+            {/* Customer Info */}
+            <Card>
+              <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><User size={16} /> معلومات العميل</CardTitle></CardHeader>
+              <CardContent className="space-y-2 text-sm">
+                <div className="flex justify-between"><span className="text-muted-foreground">الاسم:</span><span className="font-medium">{selectedOrder.shippingName}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">الهاتف:</span><span className="font-mono" dir="ltr">{selectedOrder.shippingPhone}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">العنوان:</span><span>{selectedOrder.shippingAddress}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">المدينة:</span><span>{selectedOrder.shippingCity}</span></div>
+                {selectedOrder.notes && (
+                  <div className="mt-2 p-2 bg-amber-50 rounded-lg"><span className="text-amber-700 text-xs font-medium">ملاحظات:</span> <span className="text-sm">{selectedOrder.notes}</span></div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Payment Info */}
+            <Card>
+              <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><CreditCard size={16} /> معلومات الدفع</CardTitle></CardHeader>
+              <CardContent className="space-y-2 text-sm">
+                <div className="flex justify-between"><span className="text-muted-foreground">طريقة الدفع:</span><span className="font-medium">{selectedOrder.paymentMethod === 'karimi' ? 'كريمي (Karimi)' : selectedOrder.paymentMethod === 'qutaibi' ? 'قطيبي (Qutaibi)' : selectedOrder.paymentMethod === 'jeeb' ? 'محفظة جيب (Jeeb)' : 'عند الاستلام'}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">حالة الدفع:</span><Badge variant={selectedOrder.paymentStatus === 'paid' ? 'default' : 'secondary'}>{selectedOrder.paymentStatus === 'paid' ? 'مدفوع' : selectedOrder.paymentStatus === 'refunded' ? 'مسترجع' : 'غير مدفوع'}</Badge></div>
+              </CardContent>
+            </Card>
+
+            {/* Order Items */}
+            <Card>
+              <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><Package size={16} /> المنتجات ({selectedOrder.items?.length || 0})</CardTitle></CardHeader>
+              <CardContent className="space-y-2">
+                {selectedOrder.items?.map((item, idx) => (
+                  <div key={idx} className="flex items-center justify-between p-2 border rounded-lg">
+                    <div>
+                      <p className="font-medium text-sm">{item.name}</p>
+                      <div className="flex gap-2 text-xs text-muted-foreground">
+                        <span>الكمية: {item.quantity}</span>
+                        {item.size && <span>المقاس: {item.size}</span>}
+                        {item.color && <span>اللون: {item.color}</span>}
+                      </div>
+                    </div>
+                    <div className="text-left">
+                      <p className="font-bold text-mareesh">{formatPrice(item.total)}</p>
+                      <p className="text-xs text-muted-foreground">{formatPrice(item.price)} × {item.quantity}</p>
+                    </div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+
+            {/* Totals */}
+            <Card>
+              <CardContent className="p-4 space-y-2 text-sm">
+                <div className="flex justify-between"><span className="text-muted-foreground">المجموع الفرعي</span><span>{formatPrice(selectedOrder.subtotal)}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">الشحن</span><span>{selectedOrder.shippingCost === 0 ? <span className="text-green-600">مجاني</span> : formatPrice(selectedOrder.shippingCost)}</span></div>
+                {selectedOrder.discount > 0 && <div className="flex justify-between text-green-600"><span>الخصم</span><span>-{formatPrice(selectedOrder.discount)}</span></div>}
+                <Separator />
+                <div className="flex justify-between font-bold text-lg"><span>الإجمالي</span><span className="text-mareesh">{formatPrice(selectedOrder.total)}</span></div>
+              </CardContent>
+            </Card>
+
+            {/* Actions */}
+            <div className="flex gap-2">
+              <Button className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+                onClick={() => {
+                  const msg = `🛍️ تأكيد طلب - المريش شوب\n\nرقم الطلب: ${selectedOrder.orderNumber}\nالعميل: ${selectedOrder.shippingName}\nالهاتف: ${selectedOrder.shippingPhone}\nالعنوان: ${selectedOrder.shippingAddress}, ${selectedOrder.shippingCity}\n\nالمنتجات:\n${selectedOrder.items?.map(i => `• ${i.name} × ${i.quantity} = ${formatPrice(i.total)}`).join('\n')}\n\nالإجمالي: ${formatPrice(selectedOrder.total)}\nطريقة الدفع: ${selectedOrder.paymentMethod === 'karimi' ? 'كريمي' : selectedOrder.paymentMethod === 'qutaibi' ? 'قطيبي' : selectedOrder.paymentMethod === 'jeeb' ? 'جيب' : 'عند الاستلام'}`;
+                  window.open(`https://wa.me/${settings.store_phone?.replace(/[^0-9]/g, '') || '967700000000'}?text=${encodeURIComponent(msg)}`, '_blank');
+                }}>
+                <MessageCircle size={16} className="ml-1" /> تواصل مع العميل
+              </Button>
+              <Button variant="outline" className="flex-1" onClick={() => setShowOrderDetail(false)}>إغلاق</Button>
+            </div>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+
   /* ════════════════════════════════════════════════════════════════
      FOOTER
   ════════════════════════════════════════════════════════════════ */
@@ -2585,6 +2757,7 @@ export default function Home() {
       {AuthModal()}
       {ProductModal()}
       {CategoryModal()}
+      {OrderDetailModal()}
 
       {Header()}
 
