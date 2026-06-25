@@ -197,6 +197,7 @@ export default function Home() {
   const [showProductModal, setShowProductModal] = useState(false);
   const [editCategory, setEditCategory] = useState<Partial<CategoryType> | null>(null);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [savingCategory, setSavingCategory] = useState(false);
   const [subscriberEmail, setSubscriberEmail] = useState('');
   const [contactForm, setContactForm] = useState({ name: '', email: '', subject: '', message: '' });
 
@@ -270,6 +271,16 @@ export default function Home() {
       if (res.ok) {
         const data = await res.json();
         setProducts(Array.isArray(data?.products) ? data.products : []);
+      }
+    } catch { /* ignore */ }
+  }, []);
+
+  const fetchCategories = useCallback(async () => {
+    try {
+      const res = await fetch('/api/categories');
+      if (res.ok) {
+        const data = await res.json();
+        setCategories(Array.isArray(data) ? data : []);
       }
     } catch { /* ignore */ }
   }, []);
@@ -648,11 +659,13 @@ export default function Home() {
   /* ─── ADMIN CATEGORY CRUD ─── */
   const saveCategory = async () => {
     if (!editCategory) return;
+    if (savingCategory) return; // منع الضغط المتكرر
     if (!editCategory.name || !editCategory.name.trim()) {
       showNotification('اسم الفئة بالعربي مطلوب', 'error');
       return;
     }
     try {
+      setSavingCategory(true);
       // Remove slug to let API auto-generate it if empty
       const dataToSave = { ...editCategory };
       if (!dataToSave.slug || !dataToSave.slug.trim()) {
@@ -668,18 +681,19 @@ export default function Home() {
         showNotification(editCategory.id ? 'تم تحديث الفئة' : 'تم إضافة الفئة', 'success');
         setShowCategoryModal(false);
         setEditCategory(null);
-        seedAndFetch(); // Categories affect product display, need full refresh
+        fetchCategories(); // تحديث الفئات فقط بدون seed
       } else {
         const errorData = await res.json().catch(() => ({}));
         showNotification(errorData.error || 'خطأ في حفظ الفئة', 'error');
       }
     } catch { showNotification('خطأ في حفظ الفئة', 'error'); }
+    finally { setSavingCategory(false); }
   };
 
   const deleteCategory = async (id: string) => {
     try {
       const res = await fetch(`/api/categories?id=${id}`, { method: 'DELETE' });
-      if (res.ok) { showNotification('تم حذف الفئة', 'success'); seedAndFetch(); }
+      if (res.ok) { showNotification('تم حذف الفئة', 'success'); fetchCategories(); }
     } catch { showNotification('خطأ في حذف الفئة', 'error'); }
   };
 
@@ -3455,7 +3469,7 @@ export default function Home() {
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => setShowCategoryModal(false)}>إلغاء</Button>
-          <Button onClick={saveCategory} className="bg-mareesh">حفظ</Button>
+          <Button onClick={saveCategory} className="bg-mareesh" disabled={savingCategory}>{savingCategory ? 'جاري الحفظ...' : 'حفظ'}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
