@@ -24,7 +24,7 @@ import {
   Shirt, Footprints, Zap, ArrowRight, Copy, Share2, MessageCircle, Send,
   Tag, Percent, Box, ClipboardList, LayoutDashboard, Archive, Receipt,
   CircleDot, UserCircle, CalendarDays, MapPinned, PhoneCall, Notebook,
-  Smartphone, Camera
+  Smartphone, Camera, Bell, Upload
 } from 'lucide-react';
 
 /* ─── TYPES ─── */
@@ -71,12 +71,20 @@ interface OrderType {
   paymentStatus: string; subtotal: number; shippingCost: number;
   discount: number; total: number; shippingName: string; shippingPhone: string;
   shippingAddress: string; shippingCity: string; shippingCountry: string;
+  paymentReceipt?: string; paymentTransactionId?: string;
   createdAt: string; items: OrderItemType[]; user?: { name: string; email: string };
+  notifications?: AppNotification[];
 }
 
 interface OrderItemType {
   id: string; productId: string; name: string; price: number;
   quantity: number; size?: string; color?: string; total: number;
+}
+
+interface AppNotification {
+  id: string; orderId: string; userId?: string; type: string;
+  title: string; message: string; isRead: boolean; createdAt: string;
+  order?: { orderNumber: string; status: string };
 }
 
 interface SettingsType {
@@ -208,6 +216,14 @@ export default function Home() {
   const [checkoutForm, setCheckoutForm] = useState({
     name: '', phone: '', address: '', city: '', country: 'اليمن', postalCode: '', paymentMethod: 'karimi', notes: ''
   });
+  const [paymentReceipt, setPaymentReceipt] = useState<string>('');
+  const [paymentTransactionId, setPaymentTransactionId] = useState('');
+  const [uploadingReceipt, setUploadingReceipt] = useState(false);
+
+  /* ─── NOTIFICATIONS ─── */
+  const [appNotifications, setAppNotifications] = useState<AppNotification[]>([]);
+  const [unreadNotifications, setUnreadNotifications] = useState(0);
+  const [showNotifications, setShowNotifications] = useState(false);
 
   /* ─── ADMIN SETTINGS FORM ─── */
   const [settingsForm, setSettingsForm] = useState<Record<string, string>>({});
@@ -285,6 +301,18 @@ export default function Home() {
     } catch { /* ignore */ }
   }, []);
 
+  const fetchNotifications = useCallback(async () => {
+    try {
+      const isAdmin = user?.role === 'admin';
+      const res = await fetch(`/api/notifications?${isAdmin ? 'admin=true' : (user?.id ? `userId=${user.id}` : '')}`);
+      if (res.ok) {
+        const data = await res.json();
+        setAppNotifications(data.notifications || []);
+        setUnreadNotifications(data.unreadCount || 0);
+      }
+    } catch { /* ignore */ }
+  }, [user?.id, user?.role]);
+
   const seedAndFetch = useCallback(async () => {
     try {
       setLoading(true);
@@ -324,6 +352,13 @@ export default function Home() {
   }, []);
 
   useEffect(() => { seedAndFetch(); }, [seedAndFetch]);
+
+  // جلب الإشعارات كل 30 ثانية
+  useEffect(() => {
+    fetchNotifications();
+    const interval = setInterval(fetchNotifications, 30000);
+    return () => clearInterval(interval);
+  }, [fetchNotifications]);
 
   /* ─── ADMIN DATA ─── */
   const fetchAdminData = useCallback(async () => {
@@ -488,7 +523,7 @@ export default function Home() {
         userId: user?.id || 'guest',
         status: 'pending',
         paymentMethod: checkoutForm.paymentMethod,
-        paymentStatus: 'unpaid',
+        paymentStatus: checkoutForm.paymentMethod !== 'cod' && paymentReceipt ? 'pending_verification' : 'unpaid',
         subtotal: cartSubtotal,
         shippingCost,
         discount: couponDiscount,
@@ -501,6 +536,8 @@ export default function Home() {
         shippingPostalCode: checkoutForm.postalCode,
         notes: checkoutForm.notes,
         couponCode: couponCode || undefined,
+        paymentReceipt: checkoutForm.paymentMethod !== 'cod' ? paymentReceipt : undefined,
+        paymentTransactionId: checkoutForm.paymentMethod !== 'cod' ? paymentTransactionId : undefined,
         items: cart.map((c: CartItemType) => ({
           productId: c.productId, name: c.name, price: c.price,
           quantity: c.quantity, size: c.size || undefined, color: c.color || undefined, total: c.price * c.quantity,
@@ -972,6 +1009,49 @@ export default function Home() {
 
           {/* Action buttons */}
           <div className="flex items-center gap-2">
+            {/* جرس الإشعارات */}
+            <div className="relative">
+              <Button variant="ghost" size="icon" className="relative" onClick={() => {
+                setShowNotifications(!showNotifications);
+                if (!showNotifications && unreadNotifications > 0) {
+                  fetch('/api/notifications', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(user?.role === 'admin' ? { markAllRead: true, forAdmin: true } : { markAllRead: true, userId: user?.id }),
+                  }).then(() => setUnreadNotifications(0)).catch(() => {});
+                }
+              }}>
+                <Bell size={20} />
+                {unreadNotifications > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center animate-pulse">{unreadNotifications > 9 ? '9+' : unreadNotifications}</span>
+                )}
+              </Button>
+              {/* قائمة الإشعارات */}
+              {showNotifications && (
+                <div className="absolute left-0 top-12 w-80 max-h-96 overflow-y-auto bg-white border shadow-2xl rounded-xl z-50 animate-fade-in">
+                  <div className="p-3 border-b flex justify-between items-center">
+                    <h3 className="font-bold text-sm">الإشعارات</h3>
+                    {unreadNotifications > 0 && <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full">{unreadNotifications} جديد</span>}
+                  </div>
+                  {appNotifications.length === 0 ? (
+                    <p className="p-4 text-center text-sm text-muted-foreground">لا توجد إشعارات</p>
+                  ) : (
+                    appNotifications.slice(0, 10).map(n => (
+                      <div key={n.id} className={`p-3 border-b hover:bg-cream-dark/50 cursor-pointer transition-colors ${!n.isRead ? 'bg-mareesh/5' : ''}`}>
+                        <div className="flex items-start gap-2">
+                          <div className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${n.type === 'order_placed' ? 'bg-blue-500' : n.type === 'payment_uploaded' ? 'bg-amber-500' : n.type === 'payment_verified' ? 'bg-green-500' : n.type === 'payment_rejected' ? 'bg-red-500' : 'bg-mareesh'}`} />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">{n.title}</p>
+                            <p className="text-xs text-muted-foreground line-clamp-2">{n.message}</p>
+                            <p className="text-[10px] text-muted-foreground mt-1">{new Date(n.createdAt).toLocaleDateString('ar-YE', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
             <Button variant="ghost" size="icon" className="relative" onClick={() => setView('cart')}>
               <ShoppingCart size={20} />
               {cartCount > 0 && (
@@ -2059,6 +2139,72 @@ export default function Home() {
                       {checkoutForm.paymentMethod === method.value && method.details}
                     </div>
                   ))}
+
+                  {/* قسم رفع إيصال الدفع - يظهر لطرق الدفع الإلكترونية فقط */}
+                  {checkoutForm.paymentMethod !== 'cod' && (
+                    <div className="mt-4 p-4 bg-amber-50 border-2 border-dashed border-amber-300 rounded-xl space-y-3 animate-fade-in">
+                      <p className="font-bold text-amber-800 flex items-center gap-2">
+                        <Upload size={18} /> تأكيد الدفع (اختياري - يسرع تأكيد طلبك)
+                      </p>
+                      <p className="text-xs text-amber-700">ارفع صورة إيصال التحويل أو لقطة شاشة لإثبات الدفع</p>
+                      
+                      {/* حقل رقم العملية */}
+                      <div>
+                        <Label className="text-sm font-medium">رقم العملية / رقم التحويل (اختياري)</Label>
+                        <Input 
+                          value={paymentTransactionId} 
+                          onChange={(e) => setPaymentTransactionId(e.target.value)} 
+                          placeholder="مثال: TRX123456789"
+                          className="mt-1"
+                          dir="ltr"
+                        />
+                      </div>
+
+                      {/* رفع صورة الإيصال */}
+                      <div>
+                        <Label className="text-sm font-medium">صورة الإيصال / لقطة شاشة</Label>
+                        <div className="mt-2">
+                          {paymentReceipt ? (
+                            <div className="relative inline-block">
+                              <img src={paymentReceipt} alt="إيصال الدفع" className="w-40 h-40 object-cover rounded-lg border-2 border-amber-300" />
+                              <button 
+                                onClick={() => setPaymentReceipt('')} 
+                                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600"
+                              ><X size={12} /></button>
+                            </div>
+                          ) : (
+                            <label className={`flex items-center justify-center w-full h-32 border-2 border-dashed border-amber-300 rounded-lg cursor-pointer hover:bg-amber-50 transition-colors ${uploadingReceipt ? 'opacity-50 pointer-events-none' : ''}`}>
+                              <div className="text-center">
+                                <Upload size={24} className="mx-auto text-amber-400 mb-1" />
+                                <span className="text-sm text-amber-600">{uploadingReceipt ? 'جاري الرفع...' : 'اضغط لرفع الصورة'}</span>
+                                <span className="block text-xs text-amber-500 mt-1">JPG, PNG, WebP - حد أقصى 5MB</span>
+                              </div>
+                              <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
+                                const file = e.target.files?.[0];
+                                if (!file) return;
+                                setUploadingReceipt(true);
+                                try {
+                                  const formData = new FormData();
+                                  formData.append('file', file);
+                                  formData.append('folder', 'receipts');
+                                  const uploadRes = await fetch('/api/upload', { method: 'POST', body: formData });
+                                  if (uploadRes.ok) {
+                                    const uploadData = await uploadRes.json();
+                                    setPaymentReceipt(uploadData.url);
+                                    showNotification('تم رفع الإيصال بنجاح', 'success');
+                                  } else {
+                                    showNotification('خطأ في رفع الإيصال', 'error');
+                                  }
+                                } catch { showNotification('خطأ في رفع الإيصال', 'error'); }
+                                finally { setUploadingReceipt(false); }
+                              }} disabled={uploadingReceipt} />
+                            </label>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   <div className="flex gap-3 mt-6">
                     <Button variant="outline" onClick={() => setCheckoutStep(1)} className="flex-1">السابق</Button>
                     <Button onClick={() => setCheckoutStep(3)} className="flex-1 bg-mareesh">التالي: المراجعة</Button>
@@ -2256,6 +2402,7 @@ export default function Home() {
       { id: 'customers', label: 'العملاء', icon: <UserCircle size={18} /> },
       { id: 'coupons', label: 'الكوبونات', icon: <Tag size={18} /> },
       { id: 'settings', label: 'الإعدادات', icon: <Settings size={18} /> },
+      { id: 'reports', label: 'التقارير', icon: <BarChart3 size={18} /> },
     ];
 
     return (
@@ -2545,6 +2692,49 @@ export default function Home() {
                           </Select>
                         </div>
                       </div>
+
+                      {/* تأكيد الدفع - يظهر فقط إذا كان فيه إيصال */}
+                      {o.paymentReceipt && (
+                        <div className="mt-4 pt-4 border-t">
+                          <Label className="text-sm font-medium flex items-center gap-2"><CreditCard size={16} /> تأكيد الدفع:</Label>
+                          <div className="mt-3 p-3 bg-amber-50 rounded-lg border border-amber-200 space-y-3">
+                            {o.paymentTransactionId && (
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm text-muted-foreground">رقم العملية:</span>
+                                <span className="font-mono font-bold text-sm" dir="ltr">{o.paymentTransactionId}</span>
+                              </div>
+                            )}
+                            <div>
+                              <span className="text-sm text-muted-foreground">صورة الإيصال:</span>
+                              <div className="mt-2">
+                                <a href={o.paymentReceipt} target="_blank" rel="noopener noreferrer">
+                                  <img src={o.paymentReceipt} alt="إيصال الدفع" className="w-32 h-32 object-cover rounded-lg border-2 border-amber-300 hover:scale-105 transition-transform cursor-pointer" />
+                                </a>
+                              </div>
+                            </div>
+                            <div className="flex gap-2">
+                              <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white flex-1" onClick={async () => {
+                                await fetch('/api/orders', {
+                                  method: 'PUT',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({ id: o.id, paymentStatus: 'paid' }),
+                                });
+                                showNotification('تم تأكيد الدفع بنجاح ✅', 'success');
+                                fetchAdminData();
+                              }}>✅ تأكيد الدفع</Button>
+                              <Button size="sm" variant="destructive" className="flex-1" onClick={async () => {
+                                await fetch('/api/orders', {
+                                  method: 'PUT',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({ id: o.id, paymentStatus: 'rejected' }),
+                                });
+                                showNotification('تم رفض الإيصال ❌', 'error');
+                                fetchAdminData();
+                              }}>❌ رفض</Button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
 
@@ -2939,7 +3129,170 @@ export default function Home() {
               </Card>
             </div>
           )}
+
+          {/* Reports */}
+          {adminTab === 'reports' && (
+            <ReportsTab />
+          )}
         </main>
+      </div>
+    );
+  };
+
+  /* ─── REPORTS TAB ─── */
+  const ReportsTab = () => {
+    const [reportPeriod, setReportPeriod] = useState<'daily' | 'weekly' | 'monthly'>('daily');
+    const [reportData, setReportData] = useState<any>(null);
+    const [loadingReport, setLoadingReport] = useState(false);
+
+    useEffect(() => {
+      setLoadingReport(true);
+      fetch(`/api/reports?period=${reportPeriod}&days=30`)
+        .then(r => r.ok ? r.json() : null)
+        .then(data => { setReportData(data); setLoadingReport(false); })
+        .catch(() => setLoadingReport(false));
+    }, [reportPeriod]);
+
+    if (loadingReport) return <div className="flex items-center justify-center py-20"><div className="w-8 h-8 border-4 border-mareesh border-t-transparent rounded-full animate-spin" /></div>;
+    if (!reportData) return <div className="text-center py-20 text-muted-foreground">لا توجد بيانات</div>;
+
+    const { summary, revenueByPeriod, topProducts, paymentMethods, cities } = reportData;
+
+    return (
+      <div className="space-y-6 animate-fade-in">
+        <div className="flex items-center justify-between">
+          <h2 className="text-xl font-bold text-mareesh flex items-center gap-2"><BarChart3 size={22} /> تقارير المبيعات</h2>
+          <div className="flex gap-2">
+            {(['daily', 'weekly', 'monthly'] as const).map(p => (
+              <Button key={p} size="sm" variant={reportPeriod === p ? 'default' : 'outline'} onClick={() => setReportPeriod(p)} className={reportPeriod === p ? 'bg-mareesh' : ''}>
+                {p === 'daily' ? 'يومي' : p === 'weekly' ? 'أسبوعي' : 'شهري'}
+              </Button>
+            ))}
+          </div>
+        </div>
+
+        {/* ملخص */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
+            <CardContent className="p-4 text-center">
+              <p className="text-xs text-blue-600 mb-1">إجمالي المبيعات</p>
+              <p className="text-lg font-bold text-blue-800">{formatPriceCurrency(summary.totalRevenue)}</p>
+            </CardContent>
+          </Card>
+          <Card className="bg-gradient-to-br from-green-50 to-green-100 border-green-200">
+            <CardContent className="p-4 text-center">
+              <p className="text-xs text-green-600 mb-1">الطلبات المكتملة</p>
+              <p className="text-lg font-bold text-green-800">{summary.completedOrders}</p>
+            </CardContent>
+          </Card>
+          <Card className="bg-gradient-to-br from-amber-50 to-amber-100 border-amber-200">
+            <CardContent className="p-4 text-center">
+              <p className="text-xs text-amber-600 mb-1">متوسط قيمة الطلب</p>
+              <p className="text-lg font-bold text-amber-800">{formatPriceCurrency(summary.avgOrderValue)}</p>
+            </CardContent>
+          </Card>
+          <Card className="bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200">
+            <CardContent className="p-4 text-center">
+              <p className="text-xs text-purple-600 mb-1">معدل التحويل</p>
+              <p className="text-lg font-bold text-purple-800">{summary.conversionRate}%</p>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* المبيعات حسب الفترة */}
+          <Card>
+            <CardHeader><CardTitle className="text-sm">المبيعات حسب الفترة</CardTitle></CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {Object.entries(revenueByPeriod).sort().map(([period, data]: [string, any]) => (
+                  <div key={period} className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">{period}</span>
+                    <div className="flex items-center gap-3">
+                      <span className="text-xs text-muted-foreground">{data.orders} طلب</span>
+                      <span className="font-bold text-sm">{formatPriceCurrency(data.revenue)}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* أكثر المنتجات مبيعاً */}
+          <Card>
+            <CardHeader><CardTitle className="text-sm">أكثر المنتجات مبيعاً</CardTitle></CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {topProducts.slice(0, 5).map((p: any, i: number) => (
+                  <div key={i} className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="w-6 h-6 bg-mareesh/10 rounded-full flex items-center justify-center text-xs font-bold text-mareesh">{i + 1}</span>
+                      <span className="text-sm truncate max-w-[150px]">{p.name}</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="text-xs text-muted-foreground">{p.quantity} قطعة</span>
+                      <span className="font-bold text-sm">{formatPriceCurrency(p.revenue)}</span>
+                    </div>
+                  </div>
+                ))}
+                {topProducts.length === 0 && <p className="text-sm text-muted-foreground text-center">لا توجد مبيعات بعد</p>}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* طرق الدفع */}
+          <Card>
+            <CardHeader><CardTitle className="text-sm">طرق الدفع</CardTitle></CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {Object.entries(paymentMethods).map(([method, data]: [string, any]) => {
+                  const methodNames: Record<string, string> = { karimi: 'كريمي', qutaibi: 'قطيبي', jeeb: 'جيب', cod: 'عند الاستلام' };
+                  return (
+                    <div key={method} className="flex items-center justify-between">
+                      <span className="text-sm">{methodNames[method] || method}</span>
+                      <div className="flex items-center gap-3">
+                        <span className="text-xs text-muted-foreground">{data.count} طلب</span>
+                        <span className="font-bold text-sm">{formatPriceCurrency(data.revenue)}</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* المدن */}
+          <Card>
+            <CardHeader><CardTitle className="text-sm">الطلبات حسب المدينة</CardTitle></CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {Object.entries(cities).sort((a: any, b: any) => b[1].count - a[1].count).map(([city, data]: [string, any]) => (
+                  <div key={city} className="flex items-center justify-between">
+                    <span className="text-sm">{city}</span>
+                    <div className="flex items-center gap-3">
+                      <span className="text-xs text-muted-foreground">{data.count} طلب</span>
+                      <span className="font-bold text-sm">{formatPriceCurrency(data.revenue)}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* إحصائيات سريعة */}
+        <Card>
+          <CardHeader><CardTitle className="text-sm">ملخص سريع</CardTitle></CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 text-center">
+              <div><p className="text-2xl font-bold text-mareesh">{summary.totalOrders}</p><p className="text-xs text-muted-foreground">إجمالي الطلبات</p></div>
+              <div><p className="text-2xl font-bold text-green-600">{summary.completedOrders}</p><p className="text-xs text-muted-foreground">مكتمل</p></div>
+              <div><p className="text-2xl font-bold text-amber-600">{summary.pendingOrders}</p><p className="text-xs text-muted-foreground">قيد الانتظار</p></div>
+              <div><p className="text-2xl font-bold text-red-600">{summary.cancelledOrders}</p><p className="text-xs text-muted-foreground">ملغي</p></div>
+              <div><p className="text-2xl font-bold text-purple-600">{summary.conversionRate}%</p><p className="text-xs text-muted-foreground">معدل الإنجاز</p></div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     );
   };

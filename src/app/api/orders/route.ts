@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
     if (orderNumber) {
       const order = await db.order.findFirst({
         where: { orderNumber },
-        include: { items: true },
+        include: { items: true, notifications: { orderBy: { createdAt: 'desc' }, take: 10 } },
       });
       if (!order) return Response.json({ error: 'لم يتم العثور على الطلب' }, { status: 404 });
       return Response.json(order);
@@ -40,10 +40,9 @@ export async function POST(request: NextRequest) {
     const data = await request.json();
     const orderNumber = 'MR-' + Date.now().toString(36).toUpperCase();
 
-    // Handle guest users - find or create a guest user
+    // Handle guest users
     let userId = data.userId;
     if (!userId || userId === 'guest') {
-      // Find existing guest user or create one
       let guestUser = await db.user.findFirst({ where: { role: 'customer', name: 'ضيف' }, orderBy: { createdAt: 'desc' } });
       if (!guestUser) {
         guestUser = await db.user.create({
@@ -59,10 +58,8 @@ export async function POST(request: NextRequest) {
       }
       userId = guestUser.id;
     } else {
-      // Verify the user exists
       const existingUser = await db.user.findUnique({ where: { id: userId } });
       if (!existingUser) {
-        // User doesn't exist, create as guest
         const guestUser = await db.user.create({
           data: {
             email: `guest-${Date.now()}@mareesh.com`,
@@ -77,11 +74,10 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Validate that all productIds exist
+    // Validate products
     const items = data.items || [];
     const validItems = [];
     for (const item of items) {
-      // Check if product exists in database
       const product = await db.product.findUnique({ where: { id: item.productId } });
       if (product) {
         validItems.push({
@@ -94,16 +90,10 @@ export async function POST(request: NextRequest) {
           total: (item.price || product.price) * (item.quantity || 1),
         });
       } else {
-        // Product not found - use a fallback approach
-        // Find any product to use as a placeholder (required by FK constraint)
         let fallbackProduct = await db.product.findFirst();
-        if (!fallbackProduct) {
-          // No products at all - can't create order with FK constraint
-          console.warn(`Product ${item.productId} not found and no fallback available`);
-          continue; // Skip this item
-        }
+        if (!fallbackProduct) continue;
         validItems.push({
-          productId: fallbackProduct.id, // Use fallback product ID for FK constraint
+          productId: fallbackProduct.id,
           name: item.name || 'منتج',
           price: item.price || 0,
           quantity: item.quantity || 1,
@@ -118,8 +108,11 @@ export async function POST(request: NextRequest) {
       return Response.json({ error: 'لا توجد منتجات صالحة في الطلب' }, { status: 400 });
     }
 
-    // Calculate totals on server side for accuracy
     const subtotal = validItems.reduce((sum, item) => sum + item.total, 0);
+
+    // تحديد حالة الدفع بناءً على رفع الإيصال
+    const hasPaymentReceipt = !!data.paymentReceipt;
+    const paymentStatus = hasPaymentReceipt ? 'pending_verification' : (data.paymentMethod === 'cod' ? 'unpaid' : 'unpaid');
 
     const order = await db.order.create({
       data: {
@@ -127,7 +120,7 @@ export async function POST(request: NextRequest) {
         userId,
         status: 'pending',
         paymentMethod: data.paymentMethod || 'cod',
-        paymentStatus: 'unpaid',
+        paymentStatus,
         subtotal: data.subtotal || subtotal,
         shippingCost: data.shippingCost || 0,
         discount: data.discount || 0,
@@ -140,6 +133,8 @@ export async function POST(request: NextRequest) {
         shippingPostalCode: data.shippingPostalCode || '',
         notes: data.notes || null,
         couponCode: data.couponCode || null,
+        paymentReceipt: data.paymentReceipt || null,
+        paymentTransactionId: data.paymentTransactionId || null,
         items: {
           create: validItems.map(item => ({
             productId: item.productId,
@@ -151,11 +146,27 @@ export async function POST(request: NextRequest) {
             total: item.total,
           })),
         },
+        notifications: {
+          create: [
+            {
+              userId: null, // إشعار للأدمن
+              type: 'order_placed',
+              title: 'طلب جديد',
+              message: `طلب جديد ${orderNumber} من ${data.shippingName || 'ضيف'} - المبلغ: ${data.total || subtotal} ر.س`,
+            },
+            ...(hasPaymentReceipt ? [{
+              userId: null,
+              type: 'payment_uploaded',
+              title: 'إيصال دفع جديد',
+              message: `تم رفع إيصال دفع للطلب ${orderNumber} - يرجى التحقق`,
+            }] : []),
+          ],
+        },
       },
       include: { items: true },
     });
 
-    // Update product stock for valid products only
+    // Update stock
     for (const item of validItems) {
       try {
         const product = await db.product.findUnique({ where: { id: item.productId } });
@@ -168,12 +179,10 @@ export async function POST(request: NextRequest) {
             },
           });
         }
-      } catch {
-        // Skip stock update if product not found
-      }
+      } catch { /* skip */ }
     }
 
-    console.log(`✅ Order created: ${orderNumber} - ${validItems.length} items - Total: ${order.total}`);
+    console.log(`✅ Order created: ${orderNumber} - ${validItems.length} items - Total: ${order.total} - Receipt: ${hasPaymentReceipt ? 'Yes' : 'No'}`);
 
     return Response.json(order);
   } catch (error: any) {
@@ -188,14 +197,79 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const data = await request.json();
-    const { id, _count, createdAt, updatedAt, items, user, ...updateData } = data;
+    const { id, _count, createdAt, updatedAt, items, user, notifications, ...updateData } = data;
     if (!id) return Response.json({ error: 'معرف الطلب مطلوب' }, { status: 400 });
 
+    // جلب الطلب القديم لمقارنة التغييرات
+    const oldOrder = await db.order.findUnique({ where: { id } });
+    
     const order = await db.order.update({
       where: { id },
       data: updateData,
       include: { items: true },
     });
+
+    // إنشاء إشعارات عند تغيير الحالة
+    if (updateData.status && oldOrder && oldOrder.status !== updateData.status) {
+      const statusMap: Record<string, string> = {
+        pending: 'قيد الانتظار',
+        processing: 'قيد المعالجة',
+        shipped: 'تم الشحن',
+        delivered: 'تم التوصيل',
+        cancelled: 'ملغي',
+      };
+      
+      await db.orderNotification.create({
+        data: {
+          orderId: id,
+          userId: order.userId,
+          type: 'status_changed',
+          title: 'تحديث حالة الطلب',
+          message: `تم تحديث حالة طلبك ${order.orderNumber} إلى: ${statusMap[updateData.status] || updateData.status}`,
+        },
+      });
+
+      // إرسال واتساب للزبون إذا كان رقمه موجود
+      try {
+        const phone = order.shippingPhone?.replace(/[^0-9]/g, '');
+        if (phone) {
+          const msg = `📦 *المريش شوب*\n\nتم تحديث حالة طلبك #${order.orderNumber}\n\nالحالة الجديدة: *${statusMap[updateData.status] || updateData.status}*\n\nشكراً لتسوقك معنا! 🛍️`;
+          // إرسال عبر UltraMsg أو WA API مباشرة
+          await fetch(`https://api.ultramsg.com/instance115925/messages/chat`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token: process.env.ULTRAMSG_TOKEN || '', to: phone, body: msg }),
+          }).catch(() => {}); // تجاهل الخطأ إذا ما كان الـ API متاح
+        }
+      } catch { /* ignore whatsapp error */ }
+    }
+
+    // إنشاء إشعار عند تأكيد الدفع
+    if (updateData.paymentStatus === 'paid' && oldOrder && oldOrder.paymentStatus !== 'paid') {
+      await db.orderNotification.create({
+        data: {
+          orderId: id,
+          userId: order.userId,
+          type: 'payment_verified',
+          title: 'تم تأكيد الدفع',
+          message: `تم تأكيد دفع طلبك ${order.orderNumber} - سيتم البدء في تجهيز طلبك`,
+        },
+      });
+    }
+
+    // إنشاء إشعار عند رفض الدفع
+    if (updateData.paymentStatus === 'rejected' && oldOrder && oldOrder.paymentStatus !== 'rejected') {
+      await db.orderNotification.create({
+        data: {
+          orderId: id,
+          userId: order.userId,
+          type: 'payment_rejected',
+          title: 'مرفوض إيصال الدفع',
+          message: `لم يتم قبول إيصال دفع طلبك ${order.orderNumber} - يرجى التواصل معنا أو رفع إيصال جديد`,
+        },
+      });
+    }
+
     return Response.json(order);
   } catch (error) {
     console.error('Order PUT error:', error);

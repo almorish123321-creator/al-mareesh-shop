@@ -102,9 +102,13 @@ model Order {
   shippingPostalCode String?
   notes         String?
   couponCode    String?
+  paymentReceipt String?     // رابط صورة إيصال التحويل
+  paymentTransactionId String? // رقم عملية التحويل
+  paymentVerifiedAt DateTime? // تاريخ تأكيد الدفع من الأدمن
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
   items         OrderItem[]
+  notifications OrderNotification[]
 }
 
 model OrderItem {
@@ -195,6 +199,18 @@ model ContactMessage {
   name      String
   email     String
   subject   String?
+  message   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model OrderNotification {
+  id        String   @id @default(cuid())
+  orderId   String
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  userId    String?  // null = إشعار للأدمن
+  type      String   // order_placed, payment_uploaded, status_changed, payment_verified, payment_rejected
+  title     String
   message   String
   isRead    Boolean  @default(false)
   createdAt DateTime @default(now())
