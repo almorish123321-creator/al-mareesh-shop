@@ -7,6 +7,7 @@ const nextConfig: NextConfig = {
   },
   reactStrictMode: false,
   output: 'standalone',
+  devToolbar: false,
 };
 
 export default nextConfig;
